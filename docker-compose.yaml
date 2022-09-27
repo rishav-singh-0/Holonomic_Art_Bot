@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+  core:
+    image: rishavsingh0/ros:neotic
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - .:/root/catkin_ws/src/
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    ports:
+      - "11311:11311"
+    network_mode: host
+    entrypoint: /bin/bash /root/catkin_ws/src/start.sh
+    working_dir: /root/catkin_ws
+
