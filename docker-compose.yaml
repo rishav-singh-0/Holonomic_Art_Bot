@@ -5,8 +5,9 @@ services:
     environment:
       - DISPLAY=${DISPLAY}
     volumes:
-      - .:/root/catkin_ws/src/
+      - .:/root/catkin_ws/src/:r
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - $HOME/.Xauthority:/root/.Xauthority
     ports:
       - "11311:11311"
     network_mode: host
