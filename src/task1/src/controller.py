@@ -23,14 +23,14 @@ class PositionController():
         # destination positions for this task
         self.x_goals = [1, -1, -1, 1, 0]
         self.y_goals = [1, 1, -1, -1, 0]
-        self.theta_goals = [math.pi/4, 3*math.pi/4, -3*math.pi/4, -1*math.pi/4, 0] 
+        self.theta_goals = [math.pi/4, 3*math.pi/4, -3*math.pi/4, -math.pi/4, 0] 
         self.index = 0
 
         # Declare a Twist message
         self.vel = Twist()
 
         # variables for P controller
-        self.kp = [1.2, 0.7]
+        self.kp = [0.7, 0.7]
         self.error_global = [0, 0, 0]
         self.error_local = [0, 0]       # only needs [x, y]
 
@@ -68,7 +68,7 @@ class PositionController():
             abs(self.error_global[1]) < 0.05 and \
             abs(self.error_global[2]) < 1
         if(condition):
-            print("Threshold reached")
+            print("Threshold reached!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
         return condition
     
     def next_goal(self):
@@ -81,6 +81,10 @@ class PositionController():
                 self.y_goals[self.index], 
                 self.theta_goals[self.index]
             ]
+            print()
+            print(self.index)
+            print()
+
 
     def p_controller(self):
         
@@ -102,8 +106,8 @@ class PositionController():
             # Notice: the direction of z axis says the same in global and body frame
             # therefore the errors will have have to be calculated in body frame.
             w = self.error_global[2]
-            self.error_local[0] = self.error_global[0]*math.cos(w) - self.error_global[1]*math.sin(w)
-            self.error_local[1] = - self.error_global[0]*math.sin(w) + self.error_global[1]*math.cos(w)
+            self.error_local[0] = self.error_global[0]*math.cos(self.hola_position[2]) + self.error_global[1]*math.sin(self.hola_position[2])
+            self.error_local[1] = -self.error_global[0]*math.sin(self.hola_position[2]) + self.error_global[1]*math.cos(self.hola_position[2])
 
             # Finally implement a P controller 
             # to react to the error with velocities in x, y and theta.
@@ -115,12 +119,28 @@ class PositionController():
             # make sure the velocities are within a range.
             # for now since we are in a simulator and we are not dealing with actual physical limits on the system 
             # we may get away with skipping this step. But it will be very necessary in the long run.
+            if(-2 >vel_x or vel_x>2):
+                if(vel_x<-1):
+                    vel_x = -0.5
+                if(vel_x>1):
+                    vel_x = 0.5
+            
+            if(-2 >vel_y or vel_y>2):
+                if(vel_y<-1):
+                    vel_y = -0.5
+                if(vel_y>1):
+                    vel_y = 0.5
 
             self.vel.linear.x = vel_x
             self.vel.linear.y = vel_y
             self.vel.angular.z = vel_z
             # print(self.error_global, self.error_local)
-            print(vel_x, vel_y, vel_z)
+            # print(vel_x, vel_y, vel_z)
+            # print(self.error_local[0], self.error_local[1], self.error_global[2])
+            print("vel: ",end = "")
+            print(vel_x,vel_y,vel_z)
+            print("error: ",end = "")
+            print(self.error_local[0],self.error_local[1], w)
 
             self.pub.publish(self.vel)
             self.rate.sleep()
