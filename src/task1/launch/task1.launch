@@ -1,20 +1,19 @@
 <?xml version="1.0" ?>
 <launch>
-    <node pkg="task1" type="cotroller.py" name="cotroller" output="screen"/>
-
 	<arg name="record" default="false"/>
 	<arg name="duration" default="30"/>
 	<arg name="rec_name" default="HB_task1.bag"/>
-    
 	
 	<!-- Recording section or Rosbag node --> 
 	<group if="$(arg record)">
-		<node name="rosbag_record_turtle" pkg="rosbag" type="record"
+		<node name="rosbag_record_task1" pkg="rosbag" type="record"
 		   args="record -O $(find task1)/bag_files/$(arg rec_name) --duration=$(arg duration) --chunksize=10 /turtle1/cmd_vel /turtle1/pose /sysInfo" output="screen"/>
 	</group>
 	
     <!-- Executing Exe file -->
-    <node pkg="task1" type="task1exe" name="exeFileT1" output="screen" />
+    <!-- <node pkg="task1" type="task1exe" name="exeFileT1" output="screen" /> -->
+
+	<!-- nodes -->
+    <node pkg="task1" type="controller.py" name="cotroller" output="screen"/>
 
 </launch>
-<!-- ======================================================================================= -->
