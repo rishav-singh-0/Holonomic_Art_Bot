@@ -14,17 +14,23 @@ import math
 # Odometry is given as a quaternion, but for the controller we'll need to find the orientaion theta by converting to euler angle
 from tf.transformations import euler_from_quaternion
 
-class Controller():
+class PositionController():
     def __init__(self):
         # position as [x, y, theta]
         self.hola_position = [0, 0, 0]
-        self.goal_position = [1, 1, math.pi/4]
+        self.goal_position = [0, 0, 0]
+
+        # destination positions for this task
+        self.x_goals = [1, -1, -1, 1, 0]
+        self.y_goals = [1, 1, -1, -1, 0]
+        self.theta_goals = [math.pi/4, 3*math.pi/4, -3*math.pi/4, -1*math.pi/4, 0] 
+        self.index = 0
 
         # Declare a Twist message
         self.vel = Twist()
 
         # variables for P controller
-        self.kp = 2
+        self.kp = [1.2, 0.7]
         self.error_global = [0, 0, 0]
         self.error_local = [0, 0]       # only needs [x, y]
 
@@ -57,7 +63,28 @@ class Controller():
         self.hola_position[1] = msg.pose.pose.position.y
         self.hola_position[2] = euler_from_quaternion([x,y,z,w])[2]
 
-    def main(self):
+    def threshold_box(self):
+        condition = abs(self.error_global[0]) < 0.05 and \
+            abs(self.error_global[1]) < 0.05 and \
+            abs(self.error_global[2]) < 1
+        if(condition):
+            print("Threshold reached")
+        return condition
+    
+    def next_goal(self):
+        condition = self.threshold_box()
+        print(condition,end=" ")
+        if(condition):
+            self.index += 1
+            self.goal_position = [
+                self.x_goals[self.index], 
+                self.y_goals[self.index], 
+                self.theta_goals[self.index]
+            ]
+
+    def p_controller(self):
+        
+        self.goal_position = [self.x_goals[0], self.y_goals[0], self.theta_goals[0]]
 
         while not rospy.is_shutdown():
 
@@ -75,14 +102,14 @@ class Controller():
             # Notice: the direction of z axis says the same in global and body frame
             # therefore the errors will have have to be calculated in body frame.
             w = self.error_global[2]
-            self.error_local[0] = self.error_global[0]*math.cos(w) + self.error_global[1]*math.sin(w)
-            self.error_local[1] = self.error_global[0]*math.sin(w) + self.error_global[1]*math.cos(w)
+            self.error_local[0] = self.error_global[0]*math.cos(w) - self.error_global[1]*math.sin(w)
+            self.error_local[1] = - self.error_global[0]*math.sin(w) + self.error_global[1]*math.cos(w)
 
             # Finally implement a P controller 
             # to react to the error with velocities in x, y and theta.
-            vel_x = self.kp * self.error_local[0]
-            vel_y = self.kp * self.error_local[1]
-            vel_z = self.kp * self.error_global[2]
+            vel_x = self.kp[0] * self.error_local[0]
+            vel_y = self.kp[0] * self.error_local[1]
+            vel_z = self.kp[1] * self.error_global[2]
 
             # Safety Check
             # make sure the velocities are within a range.
@@ -97,12 +124,13 @@ class Controller():
 
             self.pub.publish(self.vel)
             self.rate.sleep()
+            self.next_goal()
 
 	
 
 if __name__ == "__main__":
     try:
-        control = Controller()
-        control.main()
+        control = PositionController()
+        control.p_controller()
     except rospy.ROSInterruptException:
         pass
