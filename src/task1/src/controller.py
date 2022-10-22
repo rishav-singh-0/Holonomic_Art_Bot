@@ -14,75 +14,80 @@ import math
 # Odometry is given as a quaternion, but for the controller we'll need to find the orientaion theta by converting to euler angle
 from tf.transformations import euler_from_quaternion
 
-hola_x = 0
-hola_y = 0
-hola_theta = 0
+class Controller():
+    def __init__(self):
+        # position as [x, y, theta]
+        self.hola_position = [0, 0, 0]
+        self.goal_position = [1, 1, math.pi/4]
 
-def odometryCb(msg):
+        # Declare a Twist message
+        self.vel = Twist()
 
-    global hola_x, hola_y, hola_theta
-    # Write your code to take the msg and update the three variables
-    x = msg.pose.pose.orientation.x
-    y = msg.pose.pose.orientation.y
-    z = msg.pose.pose.orientation.z
-    w = msg.pose.pose.orientation.w
+        # For maintaining control loop rate.
+        self.rate = rospy.Rate(100)
 
-    hola_x = msg.pose.pose.position.x
-    hola_y = msg.pose.pose.position.y
+        # variables for P controller
+        self.kp = 0
+        self.error = [0, 0, 0]
 
-    
+    def odometryCb(self, msg):
 
-    hola_theta = euler_from_quaternion([x,y,z,w])[2]
+        # Write your code to take the msg and update the three variables
+        x = msg.pose.pose.orientation.x
+        y = msg.pose.pose.orientation.y
+        z = msg.pose.pose.orientation.z
+        w = msg.pose.pose.orientation.w
 
+        self.hola_position[0] = msg.pose.pose.position.x
+        self.hola_position[1] = msg.pose.pose.position.y
+        self.hola_position[2] = euler_from_quaternion([x,y,z,w])[2]
 
-	
+    def main(self):
 
-def main():
+        # Initialze Node
+        rospy.init_node('controller')
+        
+        # Initialze Publisher and Subscriber
 
-    # Initialze Node
-    rospy.init_node('controller')
-	# We'll leave this for you to figure out the syntax for 
-	# initialising node named "controller"
-	
-	# Initialze Publisher and Subscriber
+        pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
-    pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+        rospy.Subscriber('/odom', Odometry, self.odometryCb)
 
-    rospy.Subscriber('/odom', Odometry, odometryCb)
-	# We'll leave this for you to figure out the syntax for
-	# initialising publisher and subscriber of cmd_vel and odom respectively
+        # Initialise variables that may be needed for the control loop
+        # For ex: x_d, y_d, theta_d (in **meters** and **radians**) for defining desired goal-pose.
+        # and also Kp values for the P Controller
 
-    # Declare a Twist message
-    vel = Twist()
-    
-    # Initialise the required variables to 0
-	# <This is explained below>
-	
-    rate = rospy.Rate(100)
+        while not rospy.is_shutdown():
 
+            # Find error (in x, y and theta) in global frame
+            # the /odom topic is giving pose of the robot in global frame
+            # the desired pose is declared above and defined by you in global frame
+            # therefore calculate error in global frame
+            self.error[0] = self.goal_position[0] - self.hola_position[0]
+            self.error[1] = self.goal_position[1] - self.hola_position[1]
+            self.error[2] = self.goal_position[2] - self.hola_position[2]
 
+            # (Calculate error in body frame)
+            # But for Controller outputs robot velocity in robot_body frame, 
+            # i.e. velocity are define is in x, y of the robot frame, 
+            # Notice: the direction of z axis says the same in global and body frame
+            # therefore the errors will have have to be calculated in body frame.
 
-	# For maintaining control loop rate.
-	
+            # Finally implement a P controller 
+            # to react to the error with velocities in x, y and theta.
 
-	# Initialise variables that may be needed for the control loop
-	# For ex: x_d, y_d, theta_d (in **meters** and **radians**) for defining desired goal-pose.
-	# and also Kp values for the P Controller
+            # Safety Check
+            # make sure the velocities are within a range.
+            # for now since we are in a simulator and we are not dealing with actual physical limits on the system 
+            # we may get away with skipping this step. But it will be very necessary in the long run.
 
-	#
-	# 
-	# Control Loop goes here
-	#
-	#
-    while not rospy.is_shutdown():
+            self.vel.linear.x = 0 #vel_x
+            self.vel.linear.y = 0 #vel_y
+            self.vel.angular.z = 0 #vel_z
+            print(self.error)
 
-        vel.linear.x = 0 #vel_x
-        vel.linear.y = 0 #vel_y
-        vel.angular.z = 0 #vel_z
-        print(math.degrees(hola_theta), hola_y, hola_x)
-
-        pub.publish(vel)
-        rate.sleep()
+            pub.publish(self.vel)
+            self.rate.sleep()
 
 	
 
