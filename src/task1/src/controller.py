@@ -18,7 +18,7 @@ from tf.transformations import euler_from_quaternion
 from geometry_msgs.msg import PoseArray
 
 
-x_goals, y_goals, theta_goals = 0, 0, 0
+x_goals, y_goals, theta_goals = [], [], []
 
 class PositionController():
     def __init__(self):
@@ -34,6 +34,9 @@ class PositionController():
 
         # Declare a Twist message
         self.vel = Twist()
+        self.vel.linear.x = 0.0
+        self.vel.linear.y = 0.0
+        self.vel.angular.z = 0.0
 
         # variables for P controller
         self.kp = [0.7, 0.7]
@@ -96,7 +99,7 @@ class PositionController():
     
     def next_goal(self):
         condition = self.threshold_box()
-        print(condition,end=" ")
+        # print(condition,end=" ")
         if(condition):
             self.index += 1
             self.goal_position = [
@@ -111,14 +114,15 @@ class PositionController():
             return -0.5
         if(vel > 2):
             return 0.5
+        return vel
 
     def p_controller(self):
         
         while not rospy.is_shutdown():
-            if (x_goals == None):
+            if (x_goals == [] or x_goals == None):
                 self.rate.sleep()
                 continue
-            rospy.loginfo(x_goals, '\n\n\n')
+            rospy.loginfo(x_goals)
 
             self.goal_position = [
                 x_goals[self.index], 
@@ -160,9 +164,10 @@ class PositionController():
             self.vel.linear.y = vel_y
             self.vel.angular.z = vel_z
             # print(self.error_local[0], self.error_local[1], self.error_global[2])
-            print("vel: ", vel_x, vel_y, vel_z)
-            print("error: ", self.error_local[0], self.error_local[1], w)
+            # print("vel: ", vel_x, vel_y, vel_z)
+            # print("error: ", self.error_local[0], self.error_local[1], w)
 
+            rospy.loginfo(self.vel)
             self.pub.publish(self.vel)
             self.rate.sleep()
             self.next_goal()
