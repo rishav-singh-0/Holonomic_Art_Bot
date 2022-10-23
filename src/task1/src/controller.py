@@ -14,6 +14,12 @@ import math
 # Odometry is given as a quaternion, but for the controller we'll need to find the orientaion theta by converting to euler angle
 from tf.transformations import euler_from_quaternion
 
+# auto eval
+from geometry_msgs.msg import PoseArray
+
+
+x_goals, y_goals, theta_goals = 0, 0, 0
+
 class PositionController():
     def __init__(self):
         # position as [x, y, theta]
@@ -21,9 +27,9 @@ class PositionController():
         self.goal_position = [0, 0, 0]
 
         # destination positions for this task
-        self.x_goals = [1, -1, -1, 1, 0]
-        self.y_goals = [1, 1, -1, -1, 0]
-        self.theta_goals = [math.pi/4, 3*math.pi/4, -3*math.pi/4, -math.pi/4, 0] 
+        # self.x_goals = [1, -1, -1, 1, 0]
+        # self.y_goals = [1, 1, -1, -1, 0]
+        # self.theta_goals = [math.pi/4, 3*math.pi/4, -3*math.pi/4, -math.pi/4, 0] 
         self.index = 0
 
         # Declare a Twist message
@@ -42,6 +48,7 @@ class PositionController():
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
         rospy.Subscriber('/odom', Odometry, self.odometryCb)
+        rospy.Subscriber('/task1_goals', PoseArray, self.task1_goals_Cb)
 
         # Initialise variables that may be needed for the control loop
         # For ex: x_d, y_d, theta_d (in **meters** and **radians**) for defining desired goal-pose.
@@ -62,13 +69,29 @@ class PositionController():
         self.hola_position[0] = msg.pose.pose.position.x
         self.hola_position[1] = msg.pose.pose.position.y
         self.hola_position[2] = euler_from_quaternion([x,y,z,w])[2]
+    
+    def task1_goals_Cb(self, msg):
+        global x_goals, y_goals, theta_goals
+
+        x_goals.clear()
+        y_goals.clear()
+        theta_goals.clear()
+
+        for waypoint_pose in msg.poses:
+            x_goals.append(waypoint_pose.position.x)
+            y_goals.append(waypoint_pose.position.y)
+
+            orientation_q = waypoint_pose.orientation
+            orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+            theta_goal = euler_from_quaternion (orientation_list)[2]
+            theta_goals.append(theta_goal)
 
     def threshold_box(self):
         condition = abs(self.error_global[0]) < 0.05 and \
             abs(self.error_global[1]) < 0.05 and \
             abs(self.error_global[2]) < 1
         if(condition):
-            print("Threshold reached!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
+            print("Threshold reached!\n\n\n")
         return condition
     
     def next_goal(self):
@@ -77,20 +100,31 @@ class PositionController():
         if(condition):
             self.index += 1
             self.goal_position = [
-                self.x_goals[self.index], 
-                self.y_goals[self.index], 
-                self.theta_goals[self.index]
+                x_goals[self.index], 
+                y_goals[self.index], 
+                theta_goals[self.index]
             ]
-            print()
-            print(self.index)
-            print()
+            print('\n',self.index,'\n')
 
+    def safety_check(self, vel):
+        if(vel < -2):
+            return -0.5
+        if(vel > 2):
+            return 0.5
 
     def p_controller(self):
         
-        self.goal_position = [self.x_goals[0], self.y_goals[0], self.theta_goals[0]]
-
         while not rospy.is_shutdown():
+            if (x_goals == None):
+                self.rate.sleep()
+                continue
+            rospy.loginfo(x_goals, '\n\n\n')
+
+            self.goal_position = [
+                x_goals[self.index], 
+                y_goals[self.index], 
+                theta_goals[self.index]
+            ]
 
             # Find error (in x, y and theta) in global frame
             # the /odom topic is giving pose of the robot in global frame
@@ -119,28 +153,15 @@ class PositionController():
             # make sure the velocities are within a range.
             # for now since we are in a simulator and we are not dealing with actual physical limits on the system 
             # we may get away with skipping this step. But it will be very necessary in the long run.
-            if(-2 >vel_x or vel_x>2):
-                if(vel_x<-1):
-                    vel_x = -0.5
-                if(vel_x>1):
-                    vel_x = 0.5
-            
-            if(-2 >vel_y or vel_y>2):
-                if(vel_y<-1):
-                    vel_y = -0.5
-                if(vel_y>1):
-                    vel_y = 0.5
+            vel_x = self.safety_check(vel_x)
+            vel_y = self.safety_check(vel_y)
 
             self.vel.linear.x = vel_x
             self.vel.linear.y = vel_y
             self.vel.angular.z = vel_z
-            # print(self.error_global, self.error_local)
-            # print(vel_x, vel_y, vel_z)
             # print(self.error_local[0], self.error_local[1], self.error_global[2])
-            print("vel: ",end = "")
-            print(vel_x,vel_y,vel_z)
-            print("error: ",end = "")
-            print(self.error_local[0],self.error_local[1], w)
+            print("vel: ", vel_x, vel_y, vel_z)
+            print("error: ", self.error_local[0], self.error_local[1], w)
 
             self.pub.publish(self.vel)
             self.rate.sleep()
