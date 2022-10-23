@@ -9,4 +9,7 @@
     type="spawn_model"
     args="-file $(find hola_bot)/urdf/hola_bot.urdf -urdf -model hola_bot"
     output="screen" />
+
+
+    
 </launch>

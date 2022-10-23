@@ -39,7 +39,7 @@ class PositionController():
         self.vel.angular.z = 0.0
 
         # variables for P controller
-        self.kp = [0.7, 0.7]
+        self.kp = [0.9, 1.8]
         self.error_global = [0, 0, 0]
         self.error_local = [0, 0]       # only needs [x, y]
 
@@ -90,30 +90,31 @@ class PositionController():
             theta_goals.append(theta_goal)
 
     def threshold_box(self):
-        condition = abs(self.error_global[0]) < 0.05 and \
-            abs(self.error_global[1]) < 0.05 and \
-            abs(self.error_global[2]) < 1
-        if(condition):
-            print("Threshold reached!\n\n\n")
+        condition = (abs(self.error_global[0]) <= 0.05) and (abs(self.error_global[1]) <= 0.05) and (abs(math.degrees(self.error_global[2])) < 1)
+        # if(condition):
+        #     print("Threshold reached!\n\n\n")
         return condition
     
     def next_goal(self):
         condition = self.threshold_box()
         # print(condition,end=" ")
         if(condition):
+            rospy.sleep(0.5)
             self.index += 1
+            if(self.index>=(len(x_goals)-1)):
+                self.index = len(x_goals)-1
             self.goal_position = [
                 x_goals[self.index], 
                 y_goals[self.index], 
                 theta_goals[self.index]
             ]
-            print('\n',self.index,'\n')
+            # print('\n',self.index,'\n')
 
     def safety_check(self, vel):
         if(vel < -2):
-            return -0.5
+            return -1
         if(vel > 2):
-            return 0.5
+            return 1
         return vel
 
     def p_controller(self):

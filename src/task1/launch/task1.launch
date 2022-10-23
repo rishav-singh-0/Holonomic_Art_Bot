@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <launch>
 	<arg name="record" default="false"/>
-	<arg name="duration" default="30"/>
+	<arg name="duration" default="190"/>
 	<arg name="rec_name" default="HB_task1.bag"/>
 	
 	<!-- Recording section or Rosbag node --> 
@@ -14,6 +14,6 @@
     <!-- <node pkg="task1" type="task1exe" name="exeFileT1" output="screen" /> -->
 
 	<!-- nodes -->
-    <node pkg="task1" type="controller.py" name="cotroller" output="screen"/>
+    <!-- <node pkg="task1" type="controller.py" name="cotroller" output="screen"/> -->
 
 </launch>
