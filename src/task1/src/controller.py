@@ -53,13 +53,8 @@ class PositionController():
         rospy.Subscriber('/odom', Odometry, self.odometryCb)
         rospy.Subscriber('/task1_goals', PoseArray, self.task1_goals_Cb)
 
-        # Initialise variables that may be needed for the control loop
-        # For ex: x_d, y_d, theta_d (in **meters** and **radians**) for defining desired goal-pose.
-        # and also Kp values for the P Controller
-
         # For maintaining control loop rate.
         self.rate = rospy.Rate(100)
-
 
     def odometryCb(self, msg):
 
@@ -89,32 +84,34 @@ class PositionController():
             theta_goal = euler_from_quaternion (orientation_list)[2]
             theta_goals.append(theta_goal)
 
+    def reset_vel(self):
+        self.vel.linear.x = 0.0
+        self.vel.linear.y = 0.0
+        self.vel.angular.z = 0.0
+        self.pub.publish(self.vel)
+
     def threshold_box(self):
-        condition = (abs(self.error_global[0]) <= 0.05) and (abs(self.error_global[1]) <= 0.05) and (abs(math.degrees(self.error_global[2])) < 1)
-        # if(condition):
-        #     print("Threshold reached!\n\n\n")
+        condition = abs(self.error_global[0]) < 0.045 and \
+            abs(self.error_global[1]) < 0.045 and \
+            abs(math.degrees(self.error_global[2])) < 1
         return condition
     
     def next_goal(self):
         condition = self.threshold_box()
-        # print(condition,end=" ")
         if(condition):
             rospy.sleep(0.5)
-            self.index += 1
-            if(self.index>=(len(x_goals)-1)):
-                self.index = len(x_goals)-1
+            if(self.index < len(x_goals)-1):
+                self.index += 1
+                rospy.loginfo(self.index)
             self.goal_position = [
                 x_goals[self.index], 
                 y_goals[self.index], 
                 theta_goals[self.index]
             ]
-            # print('\n',self.index,'\n')
 
     def safety_check(self, vel):
-        if(vel < -2):
-            return -1
-        if(vel > 2):
-            return 1
+        if(vel < -2): return -2
+        if(vel > 2): return 2
         return vel
 
     def p_controller(self):
@@ -123,7 +120,6 @@ class PositionController():
             if (x_goals == [] or x_goals == None):
                 self.rate.sleep()
                 continue
-            rospy.loginfo(x_goals)
 
             self.goal_position = [
                 x_goals[self.index], 
@@ -131,44 +127,36 @@ class PositionController():
                 theta_goals[self.index]
             ]
 
-            # Find error (in x, y and theta) in global frame
+            # Finding error (in x, y and theta) in global frame
             # the /odom topic is giving pose of the robot in global frame
-            # the desired pose is declared above and defined by you in global frame
-            # therefore calculate error in global frame
             self.error_global[0] = self.goal_position[0] - self.hola_position[0]
             self.error_global[1] = self.goal_position[1] - self.hola_position[1]
             self.error_global[2] = self.goal_position[2] - self.hola_position[2]
 
-            # (Calculate error in body frame)
-            # But for Controller outputs robot velocity in robot_body frame, 
-            # i.e. velocity are define is in x, y of the robot frame, 
+            # Calculating error in body frame
+            w = self.hola_position[2]
+            self.error_local[0] = self.error_global[0]*math.cos(w) + self.error_global[1]*math.sin(w)
+            self.error_local[1] = -self.error_global[0]*math.sin(w) + self.error_global[1]*math.cos(w)
+
             # Notice: the direction of z axis says the same in global and body frame
             # therefore the errors will have have to be calculated in body frame.
-            w = self.error_global[2]
-            self.error_local[0] = self.error_global[0]*math.cos(self.hola_position[2]) + self.error_global[1]*math.sin(self.hola_position[2])
-            self.error_local[1] = -self.error_global[0]*math.sin(self.hola_position[2]) + self.error_global[1]*math.cos(self.hola_position[2])
 
-            # Finally implement a P controller 
+            # Finally implementing a P controller 
             # to react to the error with velocities in x, y and theta.
             vel_x = self.kp[0] * self.error_local[0]
             vel_y = self.kp[0] * self.error_local[1]
             vel_z = self.kp[1] * self.error_global[2]
 
             # Safety Check
-            # make sure the velocities are within a range.
-            # for now since we are in a simulator and we are not dealing with actual physical limits on the system 
-            # we may get away with skipping this step. But it will be very necessary in the long run.
+            # to make sure the velocities are within a range.
             vel_x = self.safety_check(vel_x)
             vel_y = self.safety_check(vel_y)
 
             self.vel.linear.x = vel_x
             self.vel.linear.y = vel_y
             self.vel.angular.z = vel_z
-            # print(self.error_local[0], self.error_local[1], self.error_global[2])
-            # print("vel: ", vel_x, vel_y, vel_z)
-            # print("error: ", self.error_local[0], self.error_local[1], w)
 
-            rospy.loginfo(self.vel)
+            # rospy.loginfo(self.vel)
             self.pub.publish(self.vel)
             self.rate.sleep()
             self.next_goal()
