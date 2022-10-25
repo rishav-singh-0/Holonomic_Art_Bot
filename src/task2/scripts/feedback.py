@@ -35,38 +35,43 @@ import cv2				# OpenCV Library
 import math				# If you find it required
 from geometry_msgs.msg import Pose2D	# Required to publish ARUCO's detected position & orientation
 
-############################ GLOBALS #############################
+class Feedback():
+	def __init__(self):
+		############################ GLOBALS #############################
 
-aruco_publisher = rospy.Publisher('detected_aruco', Pose2D)
-aruco_msg = Pose2D()
+		self.aruco_publisher = rospy.Publisher('detected_aruco', Pose2D)
+		self.aruco_msg = Pose2D()
 
-##################### FUNCTION DEFINITIONS #######################
+		#################### ROS Node ############################
 
-# NOTE :  You may define multiple helper functions here and use in your code
+		rospy.init_node('aruco_feedback_node')  
+		rospy.Subscriber('overhead_cam/image_raw', Image, self.callback)
 
-def callback(data):
-	# Bridge is Used to Convert ROS Image message to OpenCV image
-	br = CvBridge()
-	rospy.loginfo("receiving camera frame")
-	get_frame = br.imgmsg_to_cv2(data, "mono8")		# Receiving raw image in a "grayscale" format
-	current_frame = cv2.resize(get_frame, (500, 500), interpolation = cv2.INTER_LINEAR)
+	##################### FUNCTION DEFINITIONS #######################
 
-	############ ADD YOUR CODE HERE ############
 
-	# INSTRUCTIONS & HELP : 
-	#	-> Use OpenCV to find ARUCO MARKER from the IMAGE
-	#	-> You are allowed to use any other library for ARUCO detection, 
-	#        but the code should be strictly written by your team and
-	#	   your code should take image & publish coordinates on the topics as specified only.  
-	#	-> Use basic high-school geometry of "TRAPEZOIDAL SHAPES" to find accurate marker coordinates & orientation :)
-	#	-> Observe the accuracy of aruco detection & handle every possible corner cases to get maximum scores !
+	def callback(self, data):
+		# Bridge is Used to Convert ROS Image message to OpenCV image
+		br = CvBridge()
+		rospy.loginfo("receiving camera frame")
+		get_frame = br.imgmsg_to_cv2(data, "mono8")		# Receiving raw image in a "grayscale" format
+		current_frame = cv2.resize(get_frame, (500, 500), interpolation = cv2.INTER_LINEAR)
 
-	############################################
-      
-def main():
-	rospy.init_node('aruco_feedback_node')  
-	rospy.Subscriber('overhead_cam/image_raw', Image, callback)
-	rospy.spin()
+		############ ADD YOUR CODE HERE ############
+
+		# INSTRUCTIONS & HELP : 
+		#	-> Use OpenCV to find ARUCO MARKER from the IMAGE
+		#	-> You are allowed to use any other library for ARUCO detection, 
+		#        but the code should be strictly written by your team and
+		#	   your code should take image & publish coordinates on the topics as specified only.  
+		#	-> Use basic high-school geometry of "TRAPEZOIDAL SHAPES" to find accurate marker coordinates & orientation :)
+		#	-> Observe the accuracy of aruco detection & handle every possible corner cases to get maximum scores !
+
+		############################################
+		
+	def main(self):
+		rospy.spin()
   
 if __name__ == '__main__':
-  main()
+	feedback = Feedback()
+	feedback.main()
