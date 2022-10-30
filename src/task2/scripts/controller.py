@@ -108,14 +108,9 @@ class Controller():
 			self.theta_goals.append(theta_goal)
 
 	def aruco_feedback_Cb(self, msg):
-		############ ADD YOUR CODE HERE ############
-
-		# INSTRUCTIONS & HELP : 
-		#	-> Receive & store the feedback / coordinates found by aruco detection logic.
-		#	-> This feedback plays the same role as the 'Odometry' did in the previous task.
-
-		############################################
-		pass
+		self.hola_position[0] = msg.x
+		self.hola_position[1] = msg.y
+		self.hola_position[2] = msg.theta
 
 	def inverse_kinematics(self):
 		############ ADD YOUR CODE HERE ############
