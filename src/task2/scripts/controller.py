@@ -34,6 +34,7 @@ import sys		# To handle Signals by OS/user
 from geometry_msgs.msg import Wrench		# Message type used for publishing force vectors
 from geometry_msgs.msg import PoseArray	# Message type used for receiving goals
 from geometry_msgs.msg import Pose2D		# Message type used for receiving feedback
+from std_srvs.srv import Empty			# for shutdown hook
 
 import time
 import math		# If you find it useful
@@ -64,6 +65,7 @@ class Controller():
 		rospy.init_node('controller_node')
 
 		signal.signal(signal.SIGINT, self.signal_handler)
+		self.rate = rospy.Rate(200)
 
 		self.right_wheel_pub = rospy.Publisher('/right_wheel_force', Wrench, queue_size=10)
 		self.front_wheel_pub = rospy.Publisher('/front_wheel_force', Wrench, queue_size=10)
@@ -72,26 +74,26 @@ class Controller():
 		rospy.Subscriber('detected_aruco',Pose2D,self.aruco_feedback_Cb)
 		rospy.Subscriber('task2_goals',PoseArray,self.task2_goals_Cb)
 		
-		self.rate = rospy.Rate(100)
+        #ShutdownHook
+		rospy.wait_for_service('/gazebo/reset_world')
+		self.reset_world = rospy.ServiceProxy('/gazebo/reset_world',Empty)
 
 	##################### FUNCTION DEFINITIONS #######################
 
 	def signal_handler(self, sig, frame):
 		
 		# NOTE: This function is called when a program is terminated by "Ctr+C" i.e. SIGINT signal 	
-		print('Clean-up !')
+		print('\nClean-up !')
 		self.cleanup()
 		sys.exit(0)
 
 	def cleanup(self):
-		############ ADD YOUR CODE HERE ############
-
-		# INSTRUCTIONS & HELP : 
-		#	-> Not mandatory - but it is recommended to do some cleanup over here,
-		#	   to make sure that your logic and the robot model behaves predictably in the next run.
-
-		############################################
-		pass
+		force_zero = Wrench()
+		force_zero.force.x = force_zero.force.y = force_zero.force.z = 0
+		self.right_wheel_pub.publish(force_zero)
+		self.front_wheel_pub.publish(force_zero)
+		self.left_wheel_pub.publish(force_zero)
+		self.reset_world()
 	
 	def task2_goals_Cb(self, msg):
 		self.x_goals.clear()
