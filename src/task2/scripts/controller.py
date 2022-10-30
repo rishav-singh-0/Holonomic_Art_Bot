@@ -111,6 +111,12 @@ class Controller():
 		self.hola_position[0] = msg.x
 		self.hola_position[1] = msg.y
 		self.hola_position[2] = msg.theta
+	
+	def is_ready(self):
+		condition = self.x_goals == [] or \
+					self.x_goals == None or \
+					self.hola_position[0] == None
+		return condition
 
 	def inverse_kinematics(self):
 		############ ADD YOUR CODE HERE ############
@@ -137,6 +143,10 @@ class Controller():
 			
 		while not rospy.is_shutdown():
 			
+			if self.is_ready():
+				print("Waiting!")
+				self.rate.sleep()
+				continue
 			# Calculate Error from feedback
 
 			# Change the frame by using Rotation Matrix (If you find it required)
