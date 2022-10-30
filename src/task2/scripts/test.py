@@ -68,3 +68,9 @@ if __name__ == '__main__':
 # dist_matrix = np.array([0.0, 0.0, 0.0, 0.0, 0.0])
 # rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners, marker_length, camera_matrix, dist_matrix)
 # print(rvec, tvec)
+
+
+# Method 2
+# dotproduct = lambda v1,v2: sum((a*b) for a, b in zip(v1, v2))
+# length = lambda v: math.sqrt(dotproduct(v, v))
+# print(math.acos(dotproduct(v1, v2) / (length(v1) * length(v2))))
