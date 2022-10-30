@@ -50,9 +50,14 @@ class Controller():
 		self.y_goals = []
 		self.theta_goals = []
 
-		self.right_wheel_pub = None
-		self.left_wheel_pub = None
-		self.front_wheel_pub = None
+		# force vectors initialization
+		self.right_wheel = Wrench()
+		self.left_wheel = Wrench()
+		self.front_wheel = Wrench()
+
+		# position as [x, y, theta]
+		self.hola_position = [None, None, None]
+		self.goal_position = [None, None, None]
 
 		#################### ROS Node ############################
 
