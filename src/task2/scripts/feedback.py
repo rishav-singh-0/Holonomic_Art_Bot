@@ -38,7 +38,6 @@ class Feedback():
 	def __init__(self):
 		############################ GLOBALS #############################
 
-		self.aruco_publisher = rospy.Publisher('detected_aruco', Pose2D, queue_size=10)
 		self.aruco_msg = Pose2D()
 		self.current_frame = np.empty([])
 
@@ -49,6 +48,7 @@ class Feedback():
 
 		rospy.init_node('aruco_feedback_node')
 		rospy.Subscriber('overhead_cam/image_raw', Image, self.callback)
+		self.aruco_publisher = rospy.Publisher('detected_aruco', Pose2D, queue_size=10)
 
 	##################### FUNCTION DEFINITIONS #######################
 
@@ -85,7 +85,11 @@ class Feedback():
 		cv2.aruco.drawDetectedMarkers(self.current_frame, corners)
 
 		# taking the 1st detected aruco marker
-		ar = corners[0][0]
+		try:
+			ar = corners[0][0]
+		except IndexError as e:
+			rospy.logerr(e)
+			return
 
 		# for now calculating x and y by halfing 2 adjacent sides
 		x = int(np.average([ar[0][0], ar[1][0]]))
