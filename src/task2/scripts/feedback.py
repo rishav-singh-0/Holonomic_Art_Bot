@@ -75,7 +75,7 @@ class Feedback():
 	def callback(self, data):
 		# Bridge is Used to Convert ROS Image message to OpenCV image
 		br = CvBridge()
-		rospy.loginfo("receiving camera frame")
+		# rospy.loginfo("receiving camera frame")
 		get_frame = br.imgmsg_to_cv2(data, "mono8")		# Receiving raw image in a "grayscale" format
 		self.current_frame = cv2.resize(get_frame, (500, 500), interpolation = cv2.INTER_LINEAR)
 
@@ -94,14 +94,14 @@ class Feedback():
 		# taking 2 points for determining line vector(box axis)
 		v1 = self.create_vector(ar[0], ar[1]) 	#bot axis
 		v2 = np.array([1, 0])					#camera axis
-		# angle between bot axis and camera axis vectors will determine bot rietation
+		# angle between bot axis and camera axis vectors will determine bot orietation
 		theta = self.angle_between(v1, v2)
-		# print(x, y, theta)
+		print(x, y, theta)
 			
 		self.publish(x, y, theta)
 		
-		cv2.imshow("Camera Window", self.current_frame)
-		cv2.waitKey(200)
+		# cv2.imshow("Camera Window", self.current_frame)
+		# cv2.waitKey(200)
 
 		# adding delay
 		rospy.sleep(0.1)

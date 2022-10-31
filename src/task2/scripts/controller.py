@@ -30,11 +30,18 @@
 import rospy
 import signal		# To handle Signals by OS/user
 import sys		# To handle Signals by OS/user
+import numpy as np
 
 from geometry_msgs.msg import Wrench		# Message type used for publishing force vectors
 from geometry_msgs.msg import PoseArray	# Message type used for receiving goals
 from geometry_msgs.msg import Pose2D		# Message type used for receiving feedback
 from std_srvs.srv import Empty			# for shutdown hook
+
+# publishing to /cmd_vel with msg type: Twist
+
+from geometry_msgs.msg import Twist
+
+
 
 import time
 import math		# If you find it useful
@@ -47,9 +54,9 @@ class Controller():
 	def __init__(self):
 		################## GLOBAL VARIABLES ######################
 
-		self.x_goals = []
-		self.y_goals = []
-		self.theta_goals = []
+		self.x_goals = [0,350,50,250,250]
+		self.y_goals = [350,50,50,350,50]
+		self.theta_goals = [1.57, 0,  0, -0, 0]
 
 		# force vectors initialization
 		self.right_wheel = Wrench()
@@ -60,6 +67,32 @@ class Controller():
 		self.hola_position = [None, None, None]
 		self.goal_position = [None, None, None]
 
+		self.error_global = [0, 0, 0]
+		self.error_local = [0, 0]       # only needs [x, y]
+
+		self.index = 0					# For travercing the setpoints
+
+		# variables for P controller
+		self.kp = [0.0005, 0.09]
+
+		# Variables for wheel force
+		self.front_wheel_force = None
+		self.left_wheel_force = None
+		self.right_wheel_force = None
+
+		self.w = None
+		self.vel_x = None
+		self.vel_y = None
+		self.vel_z = None
+
+		self.front_w = Wrench()
+		self.left_w = Wrench()
+		self.right_w = Wrench()
+
+		self.prev = [0,0,0]
+
+		self.vel = Twist()
+
 		#################### ROS Node ############################
 
 		rospy.init_node('controller_node')
@@ -67,6 +100,7 @@ class Controller():
 		signal.signal(signal.SIGINT, self.signal_handler)
 		self.rate = rospy.Rate(200)
 
+		self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 		self.right_wheel_pub = rospy.Publisher('/right_wheel_force', Wrench, queue_size=10)
 		self.front_wheel_pub = rospy.Publisher('/front_wheel_force', Wrench, queue_size=10)
 		self.left_wheel_pub = rospy.Publisher('/left_wheel_force', Wrench, queue_size=10)
@@ -79,6 +113,8 @@ class Controller():
 		self.reset_world = rospy.ServiceProxy('/gazebo/reset_world',Empty)
 
 	##################### FUNCTION DEFINITIONS #######################
+
+
 
 	def signal_handler(self, sig, frame):
 		
@@ -93,6 +129,12 @@ class Controller():
 		self.right_wheel_pub.publish(force_zero)
 		self.front_wheel_pub.publish(force_zero)
 		self.left_wheel_pub.publish(force_zero)
+		self.vel.linear.x = 0
+		self.vel.linear.y = 0
+		self.vel.angular.z = 0
+
+		# print(self.vel)
+		self.pub.publish(self.vel)
 		self.reset_world()
 	
 	def task2_goals_Cb(self, msg):
@@ -118,9 +160,42 @@ class Controller():
 		condition = self.x_goals == [] or \
 					self.x_goals == None or \
 					self.hola_position[0] == None
+		# print(self.x_goals,self.hola_position)
 		return condition
 
-	def inverse_kinematics(self):
+
+
+
+	def threshold_box(self):
+		condition = abs(self.error_global[0]) < 2 and abs(self.error_global[1]) < 2 and abs(math.degrees(self.error_global[2])) < 1
+		return condition
+
+	def next_goal(self):
+		condition = self.threshold_box()
+		if(condition):
+			rospy.sleep(0.5)
+			if(self.index < len(self.x_goals)-1):
+				self.index += 1
+				rospy.loginfo(self.index)
+				self.goal_position = [
+                self.x_goals[self.index], 
+                self.y_goals[self.index], 
+                self.theta_goals[self.index]
+            ]
+
+	def safety_check(self, vel):
+		if(vel < -1.5):
+			print("RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
+
+			return -1.5
+		if(vel > 1.5):
+			print("RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
+
+			return 1.5
+
+		return vel
+
+	def inverse_kinematics(self,):
 		############ ADD YOUR CODE HERE ############
 
 		# INSTRUCTIONS & HELP : 
@@ -128,7 +203,51 @@ class Controller():
 		#	Process it further to find what proportions of that effort should be given to 3 individuals wheels !!
 		#	Publish the calculated efforts to actuate robot by applying force vectors on provided topics
 		############################################
-		pass
+
+		transform_matrix = np.array([[0.6667, 0, 0.333], [-0.333, 0.57735, 0.333], [-0.333, -0.57735, 0.333]])
+		local_frame_velocicites = np.array([[self.vel_x], [self.vel_y], [self.vel_z]])
+
+		[self.front_wheel_force, self.left_wheel_force, self.right_wheel_force] = np.dot(transform_matrix,local_frame_velocicites)
+
+		self.front_wheel_force = self.front_wheel_force[0]
+		self.left_wheel_force = self.left_wheel_force[0]
+		self.right_wheel_force = self.right_wheel_force[0]
+
+		self.front_wheel_force = 20*self.front_wheel_force + 0.2*(self.prev[0] - self.front_wheel_force)
+		self.left_wheel_force = 20*self.left_wheel_force + 0.2*(self.prev[1] - self.left_wheel_force)
+		self.right_wheel_force = 20*self.right_wheel_force + 0.2*(self.prev[2] - self.right_wheel_force)
+
+		self.prev = [self.front_wheel_force, self.left_wheel_force,self.right_wheel_force]
+
+	def local_frame_controller(self):
+
+		self.error_global[0] = self.goal_position[0] - self.hola_position[0]
+		self.error_global[1] = self.goal_position[1] - self.hola_position[1]
+		self.error_global[2] = self.goal_position[2] - self.hola_position[2]
+
+		# Calculating error in body frame
+		self.w = self.hola_position[2]
+		self.error_local[0] = self.error_global[0]*math.cos(self.w) + self.error_global[1]*math.sin(self.w)
+		self.error_local[1] = -self.error_global[0]*math.sin(self.w) + self.error_global[1]*math.cos(self.w)
+
+
+		self.vel_x = self.kp[0] * self.error_local[0] 
+		self.vel_y = self.kp[0] * self.error_local[1]
+		self.vel_z = self.kp[1] * self.error_global[2]
+		
+		print(self.error_global)
+		# Safety Check
+		# to make sure the velocities are within a range.
+		self.vel_x = self.safety_check(self.vel_x)
+		self.vel_y = self.safety_check(self.vel_y)
+
+
+		self.vel.linear.x = self.vel_x
+		self.vel.linear.y = self.vel_y
+		self.vel.angular.z = self.vel_z
+
+		# print(self.vel)
+		self.pub.publish(self.vel)
 
 	def main(self):
 
@@ -149,6 +268,12 @@ class Controller():
 				print("Waiting!")
 				self.rate.sleep()
 				continue
+			self.goal_position = [
+                self.x_goals[self.index], 
+                self.y_goals[self.index], 
+                self.theta_goals[self.index]
+            ]
+			# print(self.goal_position)
 			# Calculate Error from feedback
 
 			# Change the frame by using Rotation Matrix (If you find it required)
@@ -160,8 +285,22 @@ class Controller():
 			# Apply appropriate force vectors
 
 			# Modify the condition to Switch to Next goal (given position in pixels instead of meters)
+			self.local_frame_controller()
+			# self.inverse_kinematics()
 
+			# self.front_w.force.x = self.front_wheel_force
+			# self.right_w.force.x = self.right_wheel_force
+			# self.left_w.force.x = self.left_wheel_force
+
+			# print(self.front_wheel_force,self.right_wheel_force,self.left_wheel_force)
+			# self.right_wheel_pub.publish(self.right_w)
+			# self.front_wheel_pub.publish(self.front_w)
+			# self.left_wheel_pub.publish(self.left_w)
+			
+			
 			self.rate.sleep()
+
+			self.next_goal()
 
 		############################################
 
