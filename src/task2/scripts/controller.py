@@ -39,7 +39,7 @@ from std_srvs.srv import Empty			# for shutdown hook
 
 # publishing to /cmd_vel with msg type: Twist
 
-from geometry_msgs.msg import Twist
+# from geometry_msgs.msg import Twist	
 
 
 
@@ -54,9 +54,13 @@ class Controller():
 	def __init__(self):
 		################## GLOBAL VARIABLES ######################
 
-		self.x_goals = [50,350,50,250,250]
-		self.y_goals = [350,50,50,350,50]
-		self.theta_goals = [1.57, -1.57, 3, -3, 0]
+		# self.x_goals = [50,350,50,250,250]
+		# self.y_goals = [350,50,50,350,50]
+		# self.theta_goals = [1.57, -1.57, 3, -3, 0]
+
+		self.x_goals = []
+		self.y_goals = []
+		self.theta_goals = []
 
 		# force vectors initialization
 		self.right_wheel = Wrench()
@@ -73,7 +77,7 @@ class Controller():
 		self.index = 0					# For travercing the setpoints
 
 		# variables for P controller
-		self.kp = [0.002, 0.1]
+		self.kp = [0.002, 0.05]
 
 		# Variables for wheel force
 		self.front_wheel_force = None
@@ -93,7 +97,7 @@ class Controller():
 
 		self.tr_mat = np.array([[1, -math.cos(math.radians(60)), -math.cos(math.radians(60))], [-0, math.cos(math.radians(30)), -math.cos(math.radians(30))], [-1, -1, -1]])
 
-		self.vel = Twist()
+		# self.vel = Twist()
 
 		#################### ROS Node ############################
 
@@ -102,7 +106,7 @@ class Controller():
 		signal.signal(signal.SIGINT, self.signal_handler)
 		self.rate = rospy.Rate(200)
 
-		self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+		# self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 		self.right_wheel_pub = rospy.Publisher('/right_wheel_force', Wrench, queue_size=10)
 		self.front_wheel_pub = rospy.Publisher('/front_wheel_force', Wrench, queue_size=10)
 		self.left_wheel_pub = rospy.Publisher('/left_wheel_force', Wrench, queue_size=10)
@@ -111,8 +115,8 @@ class Controller():
 		rospy.Subscriber('task2_goals',PoseArray,self.task2_goals_Cb)
 		
         #ShutdownHook
-		rospy.wait_for_service('/gazebo/reset_world')
-		self.reset_world = rospy.ServiceProxy('/gazebo/reset_world',Empty)
+		# rospy.wait_for_service('/gazebo/reset_world')
+		# self.reset_world = rospy.ServiceProxy('/gazebo/reset_world',Empty)
 
 	##################### FUNCTION DEFINITIONS #######################
 
@@ -131,13 +135,13 @@ class Controller():
 		self.right_wheel_pub.publish(force_zero)
 		self.front_wheel_pub.publish(force_zero)
 		self.left_wheel_pub.publish(force_zero)
-		self.vel.linear.x = 0
-		self.vel.linear.y = 0
-		self.vel.angular.z = 0
+		# self.vel.linear.x = 0
+		# self.vel.linear.y = 0
+		# self.vel.angular.z = 0
 
 		# print(self.vel)
-		self.pub.publish(self.vel)
-		self.reset_world()
+		# self.pub.publish(self.vel)
+		# self.reset_world()
 	
 	def task2_goals_Cb(self, msg):
 		self.x_goals.clear()
@@ -169,7 +173,7 @@ class Controller():
 
 
 	def threshold_box(self):
-		condition = abs(self.error_global[0]) < 2 and abs(self.error_global[1]) < 2 and abs(math.degrees(self.error_global[2])) < 1
+		condition = abs(self.error_global[0]) < 1 and abs(self.error_global[1]) < 1 and abs(math.degrees(self.error_global[2])) <= 0.5
 		return condition
 
 	def next_goal(self):
@@ -178,8 +182,7 @@ class Controller():
 			rospy.sleep(0.01)
 			if(self.index < len(self.x_goals)-1):
 				self.index += 1
-				rospy.loginfo(self.index)
-				print("Neeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeexxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxtttttttttttttttttttttttttttttttt")
+				# rospy.loginfo(self.index)
 				self.goal_position = [
                 self.x_goals[self.index], 
                 self.y_goals[self.index], 
@@ -188,12 +191,8 @@ class Controller():
 
 	def safety_check(self, vel):
 		if(vel < -1.5):
-			print("RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
-
 			return -1.5
 		if(vel > 1.5):
-			print("RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
-
 			return 1.5
 
 		return vel
@@ -216,9 +215,9 @@ class Controller():
 		self.left_wheel_force = self.left_wheel_force[0]
 		self.right_wheel_force = self.right_wheel_force[0]
 
-		self.front_wheel_force = 2000*self.front_wheel_force# + (0.5)*(self.prev[0] - self.front_wheel_force)
-		self.left_wheel_force = 2000*self.left_wheel_force# + (0.5)*(self.prev[1] - self.left_wheel_force)
-		self.right_wheel_force = 2000*self.right_wheel_force# + (0.5)*(self.prev[2] - self.right_wheel_force)
+		self.front_wheel_force = 1500*self.front_wheel_force + (0.5)*(self.prev[0] - self.front_wheel_force)
+		self.left_wheel_force = 1500*self.left_wheel_force + (0.5)*(self.prev[1] - self.left_wheel_force)
+		self.right_wheel_force = 1500*self.right_wheel_force + (0.5)*(self.prev[2] - self.right_wheel_force)
 
 		self.prev = [self.front_wheel_force, self.left_wheel_force,self.right_wheel_force]
 
@@ -238,7 +237,7 @@ class Controller():
 		self.vel_y = self.kp[0] * self.error_local[1]
 		self.vel_z = self.kp[1] * self.error_global[2]
 		
-		print(self.error_global)
+		# print(self.error_global)
 		# Safety Check
 		# to make sure the velocities are within a range.
 		self.vel_x = self.safety_check(self.vel_x)
