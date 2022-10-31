@@ -37,19 +37,12 @@ from geometry_msgs.msg import PoseArray	# Message type used for receiving goals
 from geometry_msgs.msg import Pose2D		# Message type used for receiving feedback
 from std_srvs.srv import Empty			# for shutdown hook
 
-# publishing to /cmd_vel with msg type: Twist
-
-# from geometry_msgs.msg import Twist	
-
-
-
 import time
 import math		# If you find it useful
 
 from tf.transformations import euler_from_quaternion	# Convert angles
 
 class Controller():
-	PI = 3.14
 
 	def __init__(self):
 		################## GLOBAL VARIABLES ######################
@@ -94,8 +87,6 @@ class Controller():
 		self.sum = [0,0,0]
 
 		self.tr_mat = np.array([[1, -math.cos(math.radians(60)), -math.cos(math.radians(60))], [-0, math.cos(math.radians(30)), -math.cos(math.radians(30))], [-1, -1, -1]])
-
-		# self.vel = Twist()
 
 		#################### ROS Node ############################
 
@@ -213,7 +204,6 @@ class Controller():
 								# + self.const_force[1]*self.sum[2]
 
 		self.prev = [self.front_wheel_force, self.left_wheel_force,self.right_wheel_force]
-		self.sum = [self.sum[0] + self.front_wheel_force, self.sum[1] + self.left_wheel_force, self.sum[2] + self.right_wheel_force]
 
 	def local_frame_controller(self):
 
@@ -244,21 +234,9 @@ class Controller():
 		self.right_wheel_pub.publish(self.right_w)
 		self.front_wheel_pub.publish(self.front_w)
 		self.left_wheel_pub.publish(self.left_w)
-			
 
 	def main(self):
 
-		############ ADD YOUR CODE HERE ############
-
-		# INSTRUCTIONS & HELP : 
-		#	-> Make use of the logic you have developed in previous task to go-to-goal.
-		#	-> Extend your logic to handle the feedback that is in terms of pixels.
-		#	-> Tune your controller accordingly.
-		# 	-> In this task you have to further implement (Inverse Kinematics!)
-		#      find three omni-wheel velocities (v1, v2, v3) = left/right/center_wheel_force (assumption to simplify)
-		#      given velocity of the chassis (Vx, Vy, W)
-		#	   
-			
 		while not rospy.is_shutdown():
 			
 			if self.is_ready():
@@ -270,17 +248,7 @@ class Controller():
                 self.y_goals[self.index], 
                 self.theta_goals[self.index]
             ]
-			# Calculate Error from feedback
 
-			# Change the frame by using Rotation Matrix (If you find it required)
-
-			# Calculate the required velocity of bot for the next iteration(s)
-			
-			# Find the required force vectors for individual wheels from it.(Inverse Kinematics)
-
-			# Apply appropriate force vectors
-
-			# Modify the condition to Switch to Next goal (given position in pixels instead of meters)
 			self.local_frame_controller()
 			self.inverse_kinematics()
 
@@ -288,7 +256,6 @@ class Controller():
 			self.rate.sleep()
 			self.next_goal()
 
-		############################################
 
 if __name__ == "__main__":
 	try:

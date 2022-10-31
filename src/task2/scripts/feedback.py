@@ -100,7 +100,7 @@ class Feedback():
 		v2 = np.array([1, 0])					#camera axis
 		# angle between bot axis and camera axis vectors will determine bot orietation
 		theta = self.angle_between(v1, v2)
-		print(x, y, theta)
+		# print(x, y, theta)
 			
 		self.publish(x, y, theta)
 		
