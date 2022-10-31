@@ -104,7 +104,7 @@ class Feedback():
 		# cv2.waitKey(200)
 
 		# adding delay
-		rospy.sleep(0.1)
+		rospy.sleep(0.01)
 
 	def publish(self, x, y, theta):
 		self.aruco_msg.x = x
