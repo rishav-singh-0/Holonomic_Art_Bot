@@ -54,13 +54,9 @@ class Controller():
 	def __init__(self):
 		################## GLOBAL VARIABLES ######################
 
-		# self.x_goals = [50,350,50,250,250]
-		# self.y_goals = [350,50,50,350,50]
-		# self.theta_goals = [1.57, -1.57, 3, -3, 0]
-
-		self.x_goals = [350,50,50,350,250]
-		self.y_goals = [350,350,50,50,250]
-		self.theta_goals = [0.785, 2.335, -2.335, -0.785, 0]
+		self.x_goals = []
+		self.y_goals = []
+		self.theta_goals = []
 
 		# force vectors initialization
 		self.right_wheel = Wrench()
@@ -77,8 +73,8 @@ class Controller():
 		self.index = 0					# For travercing the setpoints
 
 		# variables for P controller
-		self.const_vel = [0.004, 0.02]
-		self.const_force = [2500, 0.00]
+		self.const_vel = [0.003, 0.02]
+		self.const_force = [2000, 0.00]
 
 		# Variables for wheel force
 		self.front_wheel_force = None
@@ -114,7 +110,7 @@ class Controller():
 		self.left_wheel_pub = rospy.Publisher('/left_wheel_force', Wrench, queue_size=10)
 
 		rospy.Subscriber('detected_aruco',Pose2D,self.aruco_feedback_Cb)
-		# rospy.Subscriber('task2_goals',PoseArray,self.task2_goals_Cb)
+		rospy.Subscriber('task2_goals',PoseArray,self.task2_goals_Cb)
 		
         #ShutdownHook
 		rospy.wait_for_service('/gazebo/reset_world')
@@ -164,8 +160,8 @@ class Controller():
 		return condition
 
 	def threshold_box(self):
-		condition = abs(self.error_global[0]) < 1 and \
-					abs(self.error_global[1]) < 1 and \
+		condition = abs(self.error_global[0]) < 5 and \
+					abs(self.error_global[1]) < 5 and \
 					abs(math.degrees(self.error_global[2])) <= 1
 		return condition
 
@@ -235,14 +231,20 @@ class Controller():
 		self.vel_y = self.const_vel[0] * self.error_local[1]
 		self.vel_z = self.const_vel[1] * self.error_global[2]
 		
-		print(math.degrees(self.error_global[2]))
 		# Safety Check
 		# to make sure the velocities are within a range.
 		self.vel_x = self.safety_check(self.vel_x)
 		self.vel_y = self.safety_check(self.vel_y)
 
 	def publish_force(self):
-		pass
+		self.front_w.force.x = self.front_wheel_force
+		self.right_w.force.x = self.right_wheel_force
+		self.left_w.force.x = self.left_wheel_force
+
+		self.right_wheel_pub.publish(self.right_w)
+		self.front_wheel_pub.publish(self.front_w)
+		self.left_wheel_pub.publish(self.left_w)
+			
 
 	def main(self):
 
@@ -268,7 +270,6 @@ class Controller():
                 self.y_goals[self.index], 
                 self.theta_goals[self.index]
             ]
-			# print(self.goal_position)
 			# Calculate Error from feedback
 
 			# Change the frame by using Rotation Matrix (If you find it required)
@@ -283,18 +284,8 @@ class Controller():
 			self.local_frame_controller()
 			self.inverse_kinematics()
 
-			self.front_w.force.x = self.front_wheel_force
-			self.right_w.force.x = self.right_wheel_force
-			self.left_w.force.x = self.left_wheel_force
-
-			# print(self.front_wheel_force,self.right_wheel_force,self.left_wheel_force)
-			self.right_wheel_pub.publish(self.right_w)
-			self.front_wheel_pub.publish(self.front_w)
-			self.left_wheel_pub.publish(self.left_w)
-			
-			print(self.index)
+			self.publish_force()
 			self.rate.sleep()
-
 			self.next_goal()
 
 		############################################
