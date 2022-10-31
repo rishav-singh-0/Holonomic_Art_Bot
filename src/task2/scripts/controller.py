@@ -77,7 +77,8 @@ class Controller():
 		self.index = 0					# For travercing the setpoints
 
 		# variables for P controller
-		self.kp = [0.002, 0.04]
+		self.const_vel = [0.004, 0.02]
+		self.const_force = [2500, 0.00]
 
 		# Variables for wheel force
 		self.front_wheel_force = None
@@ -116,12 +117,10 @@ class Controller():
 		# rospy.Subscriber('task2_goals',PoseArray,self.task2_goals_Cb)
 		
         #ShutdownHook
-		# rospy.wait_for_service('/gazebo/reset_world')
-		# self.reset_world = rospy.ServiceProxy('/gazebo/reset_world',Empty)
+		rospy.wait_for_service('/gazebo/reset_world')
+		self.reset_world = rospy.ServiceProxy('/gazebo/reset_world',Empty)
 
 	##################### FUNCTION DEFINITIONS #######################
-
-
 
 	def signal_handler(self, sig, frame):
 		
@@ -136,27 +135,21 @@ class Controller():
 		self.right_wheel_pub.publish(force_zero)
 		self.front_wheel_pub.publish(force_zero)
 		self.left_wheel_pub.publish(force_zero)
-		# self.vel.linear.x = 0
-		# self.vel.linear.y = 0
-		# self.vel.angular.z = 0
-
-		# print(self.vel)
-		# self.pub.publish(self.vel)
-		# self.reset_world()
+		self.reset_world()
 	
-	# def task2_goals_Cb(self, msg):
-	# 	self.x_goals.clear()
-	# 	self.y_goals.clear()
-	# 	self.theta_goals.clear()
+	def task2_goals_Cb(self, msg):
+		self.x_goals.clear()
+		self.y_goals.clear()
+		self.theta_goals.clear()
 
-	# 	for waypoint_pose in msg.poses:
-	# 		self.x_goals.append(waypoint_pose.position.x)
-	# 		self.y_goals.append(waypoint_pose.position.y)
+		for waypoint_pose in msg.poses:
+			self.x_goals.append(waypoint_pose.position.x)
+			self.y_goals.append(waypoint_pose.position.y)
 
-	# 		orientation_q = waypoint_pose.orientation
-	# 		orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
-	# 		theta_goal = euler_from_quaternion (orientation_list)[2]
-	# 		self.theta_goals.append(theta_goal)
+			orientation_q = waypoint_pose.orientation
+			orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+			theta_goal = euler_from_quaternion (orientation_list)[2]
+			self.theta_goals.append(theta_goal)
 
 	def aruco_feedback_Cb(self, msg):
 		self.hola_position[0] = msg.x
@@ -170,12 +163,10 @@ class Controller():
 		# print(self.x_goals,self.hola_position)
 		return condition
 
-
-
-
 	def threshold_box(self):
-		condition = abs(self.error_global[0]) < 1 and abs(self.error_global[1]) < 1 and abs(math.degrees(self.error_global[2])) <= 1
-		print(condition)
+		condition = abs(self.error_global[0]) < 1 and \
+					abs(self.error_global[1]) < 1 and \
+					abs(math.degrees(self.error_global[2])) <= 1
 		return condition
 
 	def next_goal(self):
@@ -186,17 +177,15 @@ class Controller():
 				self.index += 1
 				# rospy.loginfo(self.index)
 				self.goal_position = [
-                self.x_goals[self.index], 
-                self.y_goals[self.index], 
-                self.theta_goals[self.index]
-            ]
+					self.x_goals[self.index], 
+					self.y_goals[self.index], 
+					self.theta_goals[self.index]
+				]
 
 	def safety_check(self, vel):
-		if(vel < -1.5):
-			return -1.5
-		if(vel > 1.5):
-			return 1.5
-
+		constain = 2
+		if(vel < -constain): return -constain
+		if(vel > constain): return constain
 		return vel
 
 	def inverse_kinematics(self,):
@@ -217,9 +206,15 @@ class Controller():
 		self.left_wheel_force = self.left_wheel_force[0]
 		self.right_wheel_force = self.right_wheel_force[0]
 
-		self.front_wheel_force = 2000*self.front_wheel_force + (0.009)*(self.front_wheel_force - self.prev[0])# + 0.0005*self.sum[0]
-		self.left_wheel_force = 2000*self.left_wheel_force + (0.009)*(self.left_wheel_force - self.prev[1])# + 0.0005*self.sum[1]
-		self.right_wheel_force = 2000*self.right_wheel_force + (0.009)*(self.right_wheel_force - self.prev[2])# + 0.0005*self.sum[2]
+		self.front_wheel_force = self.const_force[0]*self.front_wheel_force + \
+								self.const_force[1]*(self.front_wheel_force - self.prev[0])
+								# + self.const_force[1]*self.sum[0]
+		self.left_wheel_force = self.const_force[0]*self.left_wheel_force + \
+								self.const_force[1]*(self.left_wheel_force - self.prev[1])
+								# + self.const_force[1]*self.sum[1]
+		self.right_wheel_force = self.const_force[0]*self.right_wheel_force + \
+								self.const_force[1]*(self.right_wheel_force - self.prev[2])
+								# + self.const_force[1]*self.sum[2]
 
 		self.prev = [self.front_wheel_force, self.left_wheel_force,self.right_wheel_force]
 		self.sum = [self.sum[0] + self.front_wheel_force, self.sum[1] + self.left_wheel_force, self.sum[2] + self.right_wheel_force]
@@ -236,9 +231,9 @@ class Controller():
 		self.error_local[1] = -self.error_global[0]*math.sin(self.w) - self.error_global[1]*math.cos(self.w)
 
 
-		self.vel_x = self.kp[0] * self.error_local[0] 
-		self.vel_y = self.kp[0] * self.error_local[1]
-		self.vel_z = self.kp[1] * self.error_global[2]
+		self.vel_x = self.const_vel[0] * self.error_local[0] 
+		self.vel_y = self.const_vel[0] * self.error_local[1]
+		self.vel_z = self.const_vel[1] * self.error_global[2]
 		
 		print(math.degrees(self.error_global[2]))
 		# Safety Check
@@ -246,13 +241,8 @@ class Controller():
 		self.vel_x = self.safety_check(self.vel_x)
 		self.vel_y = self.safety_check(self.vel_y)
 
-
-		# self.vel.linear.x = self.vel_x
-		# self.vel.linear.y = self.vel_y
-		# self.vel.angular.z = self.vel_z
-
-		# # print(self.vel)
-		# self.pub.publish(self.vel)
+	def publish_force(self):
+		pass
 
 	def main(self):
 
@@ -303,7 +293,7 @@ class Controller():
 			self.left_wheel_pub.publish(self.left_w)
 			
 			print(self.index)
-			# self.rate.sleep()
+			self.rate.sleep()
 
 			self.next_goal()
 
