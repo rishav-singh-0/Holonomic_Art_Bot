@@ -61,32 +61,31 @@ class Controller():
 		self.goal_position = [None, None, None]
 
 		self.error_global = [0, 0, 0]
-		self.error_local = [0, 0]       # only needs [x, y]
+		self.error_local = {'x':0, 'y':0}       # only needs [x, y]
 
 		self.index = 0					# For travercing the setpoints
 
 		# variables for P controller
-		self.const_vel = [0.003, 0.02]
-		self.const_force = [2000, 0.00]
+		self.const_vel = [0.003, 0.03, 0.0]
+		self.const_force = [2000, 0.01, 0.0]
+		# self.err_prev = { 'front':0, 'left':0, 'right':0 }
+		# self.err_sum = [0,0,0]
 
 		# Variables for wheel force
-		self.front_wheel_force = None
-		self.left_wheel_force = None
-		self.right_wheel_force = None
+		self.wheel_force = { 'front': None, 'left': None, 'right': None }
 
-		self.w = None
-		self.vel_x = None
-		self.vel_y = None
-		self.vel_z = None
+		self.vel = {'x':None, 'y':None, 'w':None }
 
 		self.front_w = Wrench()
 		self.left_w = Wrench()
 		self.right_w = Wrench()
 
-		self.prev = [0,0,0]
-		self.sum = [0,0,0]
-
-		self.tr_mat = np.array([[1, -math.cos(math.radians(60)), -math.cos(math.radians(60))], [-0, math.cos(math.radians(30)), -math.cos(math.radians(30))], [-1, -1, -1]])
+		self.tr_mat = np.array([
+			[1, -np.cos(math.radians(60)), -np.cos(math.radians(60))], 
+			[-0, np.cos(math.radians(30)), -np.cos(math.radians(30))], 
+			[-2, -2, -2]
+		])
+		self.transform_matrix = np.linalg.inv(self.tr_mat)
 
 		#################### ROS Node ############################
 
@@ -159,9 +158,9 @@ class Controller():
 	def next_goal(self):
 		condition = self.threshold_box()
 		if(condition):
-			# rospy.sleep(0.1)
 			if(self.index < len(self.x_goals)-1):
 				self.index += 1
+				rospy.sleep(0.1)
 				# rospy.loginfo(self.index)
 				self.goal_position = [
 					self.x_goals[self.index], 
@@ -175,61 +174,51 @@ class Controller():
 		if(vel > constain): return constain
 		return vel
 
-	def inverse_kinematics(self,):
-		############ ADD YOUR CODE HERE ############
+	def inverse_kinematics(self):
+		'''
+		Calculate the force to wheels needed for gaining required velocity
+		'''
 
-		# INSTRUCTIONS & HELP : 
-		#	-> Use the target velocity you calculated for the robot in previous task, and
-		#	Process it further to find what proportions of that effort should be given to 3 individuals wheels !!
-		#	Publish the calculated efforts to actuate robot by applying force vectors on provided topics
-		############################################
+		local_frame_velocicites = np.array([[self.vel['x']], [self.vel['y']], [self.vel['w']]])
 
-		transform_matrix = np.linalg.inv(self.tr_mat)
-		local_frame_velocicites = np.array([[self.vel_x], [self.vel_y], [self.vel_z]])
+		force = np.dot(self.transform_matrix,local_frame_velocicites)
+		self.wheel_force['front'] = force[0][0]
+		self.wheel_force['left'] = force[1][0]
+		self.wheel_force['right'] = force[2][0]
 
-		[self.front_wheel_force, self.left_wheel_force, self.right_wheel_force] = np.dot(transform_matrix,local_frame_velocicites)
+		for i in ['front', 'left', 'right']:
+			self.wheel_force[i] = self.const_force[0]*self.wheel_force[i]
+								# + self.const_force[1]*(self.wheel_force[i] - self.err_prev[i])
+								# + self.const_force[2]*self.sum[i]
+		# self.err_prev = self.wheel_force
+		# self.err_sum = [self.sum[0] + self.wheel_force['front'], self.sum[1] + self.wheel_force['left'], self.sum[2] + self.wheel_force['right']]
 
-		self.front_wheel_force = self.front_wheel_force[0]
-		self.left_wheel_force = self.left_wheel_force[0]
-		self.right_wheel_force = self.right_wheel_force[0]
+	def position_controller(self):
+		'''
+		Calculate the velocity required to reach desired position goal
+		'''
 
-		self.front_wheel_force = self.const_force[0]*self.front_wheel_force + \
-								self.const_force[1]*(self.front_wheel_force - self.prev[0])
-								# + self.const_force[1]*self.sum[0]
-		self.left_wheel_force = self.const_force[0]*self.left_wheel_force + \
-								self.const_force[1]*(self.left_wheel_force - self.prev[1])
-								# + self.const_force[1]*self.sum[1]
-		self.right_wheel_force = self.const_force[0]*self.right_wheel_force + \
-								self.const_force[1]*(self.right_wheel_force - self.prev[2])
-								# + self.const_force[1]*self.sum[2]
-
-		self.prev = [self.front_wheel_force, self.left_wheel_force,self.right_wheel_force]
-
-	def local_frame_controller(self):
-
-		self.error_global[0] = self.goal_position[0] - self.hola_position[0]
-		self.error_global[1] = self.goal_position[1] - self.hola_position[1]
-		self.error_global[2] = self.goal_position[2] - self.hola_position[2]
+		for i in range(3):
+			self.error_global[i] = self.goal_position[i] - self.hola_position[i]
 
 		# Calculating error in body frame
-		self.w = self.hola_position[2]
-		self.error_local[0] = self.error_global[0]*math.cos(self.w) - self.error_global[1]*math.sin(self.w)
-		self.error_local[1] = -self.error_global[0]*math.sin(self.w) - self.error_global[1]*math.cos(self.w)
+		w = self.hola_position[2]
+		self.error_local['x'] = self.error_global[0]*math.cos(w) - self.error_global[1]*math.sin(w)
+		self.error_local['y'] = -self.error_global[0]*math.sin(w) - self.error_global[1]*math.cos(w)
 
 
-		self.vel_x = self.const_vel[0] * self.error_local[0] 
-		self.vel_y = self.const_vel[0] * self.error_local[1]
-		self.vel_z = self.const_vel[1] * self.error_global[2]
+		# P controller for velocity
+		self.vel['w'] = self.const_vel[1] * self.error_global[2]	# angular velocity
+		for i in ['x', 'y']:
+			self.vel[i] = self.const_vel[0] * self.error_local[i]
+
+			# Safety Check to ensure the velocities are within a range.
+			self.vel[i] = self.safety_check(self.vel[i])
 		
-		# Safety Check
-		# to make sure the velocities are within a range.
-		self.vel_x = self.safety_check(self.vel_x)
-		self.vel_y = self.safety_check(self.vel_y)
-
 	def publish_force(self):
-		self.front_w.force.x = self.front_wheel_force
-		self.right_w.force.x = self.right_wheel_force
-		self.left_w.force.x = self.left_wheel_force
+		self.front_w.force.x = self.wheel_force['front']
+		self.left_w.force.x = self.wheel_force['left']
+		self.right_w.force.x = self.wheel_force['right']
 
 		self.right_wheel_pub.publish(self.right_w)
 		self.front_wheel_pub.publish(self.front_w)
@@ -239,17 +228,25 @@ class Controller():
 
 		while not rospy.is_shutdown():
 			
+			# checking if the subscibed variables are on position
 			if self.is_ready():
 				print("Waiting!")
 				self.rate.sleep()
 				continue
-			self.goal_position = [
-                self.x_goals[self.index], 
-                self.y_goals[self.index], 
-                self.theta_goals[self.index]
-            ]
+			
+			# removing error while going to next test case
+			try:
+				self.goal_position = [
+					self.x_goals[self.index], 
+					self.y_goals[self.index], 
+					self.theta_goals[self.index]
+				]
+			except IndexError as e:
+				rospy.logerr(e)
+				self.rate.sleep()
+				continue
 
-			self.local_frame_controller()
+			self.position_controller()
 			self.inverse_kinematics()
 
 			self.publish_force()
