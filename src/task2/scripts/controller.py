@@ -66,8 +66,8 @@ class Controller():
 		self.index = 0					# For travercing the setpoints
 
 		# variables for P controller
-		self.const_vel = [0.003, 0.03, 0.0]
-		self.const_force = [2000, 0.01, 0.0]
+		self.const_vel = [0.003, 0.06]			# [kp_xy, kp_w]
+		self.const_force = [2000, 0.02, 0.0]	# [kp, kd, ki]
 		# self.err_prev = { 'front':0, 'left':0, 'right':0 }
 		# self.err_sum = [0,0,0]
 
