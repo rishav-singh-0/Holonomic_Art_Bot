@@ -74,7 +74,7 @@ class Feedback():
 		theta = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 		# print(v1_u, v2_u, theta)
 
-		if(v1[1]>0):
+		if(v1[0]>0):
 			return -theta
 		return theta
 
@@ -101,8 +101,8 @@ class Feedback():
 		x, y = self.centroid(ar)
 
 		# taking 2 points for determining line vector(box axis)
-		v1 = self.create_vector(ar[0], ar[1]) 	#bot axis
-		v2 = np.array([1, 0])					#camera axis
+		v1 = self.create_vector(np.array([x, y]), ar[0]/2+ar[1]/2) 	#bot axis
+		v2 = np.array([0, -1])										#camera axis
 		# angle between bot axis and camera axis vectors will determine bot orietation
 		theta = self.angle_between(v1, v2)
 		# print(x, y, theta)
