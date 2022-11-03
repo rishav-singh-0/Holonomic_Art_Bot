@@ -52,6 +52,12 @@ class Feedback():
 
 	##################### FUNCTION DEFINITIONS #######################
 
+	def centroid(self, arr):
+		length = arr.shape[0]
+		sum_x = np.sum(arr[:, 0])
+		sum_y = np.sum(arr[:, 1])
+		return sum_x/length, sum_y/length
+
 	def create_vector(self, point_1, point_2):
 		return np.array(point_2 - point_1)
 
@@ -90,10 +96,9 @@ class Feedback():
 		except IndexError as e:
 			rospy.logerr(e)
 			return
-
-		# for now calculating x and y by halfing 2 adjacent sides
-		x = int(np.average([ar[0][0], ar[1][0]]))
-		y = int(np.average([ar[0][1], ar[3][1]]))
+		
+		# calculating x, y by taking cetroid of the quadilateral
+		x, y = self.centroid(ar)
 
 		# taking 2 points for determining line vector(box axis)
 		v1 = self.create_vector(ar[0], ar[1]) 	#bot axis
