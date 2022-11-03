@@ -109,11 +109,11 @@ class Feedback():
 			
 		self.publish(x, y, theta)
 		
-		# cv2.imshow("Camera Window", self.current_frame)
-		# cv2.waitKey(200)
+		cv2.imshow("Camera Window", self.current_frame)
+		cv2.waitKey(10)
 
 		# adding delay
-		rospy.sleep(0.01)
+		rospy.sleep(0.001)
 
 	def publish(self, x, y, theta):
 		self.aruco_msg.x = x
