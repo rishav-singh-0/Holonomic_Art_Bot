@@ -1,15 +1,5 @@
 #include <AccelStepper.h>
-
-// Defining direction and step pins for the stepper motor
-
-int front_wheel_dir = 6;
-int front_wheel_step = 7;
-
-int left_wheel_dir = 8;
-int left_wheel_step = 9;
-
-int right_wheel_dir = 10;
-int right_wheel_step = 11;
+#include "pins.h"
 
 // Creating the motor force variables
 
@@ -32,9 +22,9 @@ float g_y =0;
 float w = 0;
 
 // Creating the objects for controlling the motors
-AccelStepper stepper_front(AccelStepper::DRIVER, front_wheel_step, front_wheel_dir); 
-AccelStepper stepper_left(AccelStepper::DRIVER, left_wheel_step, left_wheel_dir); 
-AccelStepper stepper_rigth(AccelStepper::DRIVER, right_wheel_step, right_wheel_dir);
+AccelStepper stepper_front(AccelStepper::DRIVER, FRONT_WHEEL_STEP, FRONT_WHEEL_DIR); 
+AccelStepper stepper_left(AccelStepper::DRIVER, LEFT_WHEEL_STEP, LEFT_WHEEL_DIR); 
+AccelStepper stepper_rigth(AccelStepper::DRIVER, RIGHT_WHEEL_STEP, RIGHT_WHEEL_DIR);
 
 
 void setup() {
@@ -53,8 +43,4 @@ void get_f_wheels( float x, float y, float w){
   f_left = (-0.333 * x) + (0.577367 * y) + (-0.16667 * w);
   f_right = (-0.333 * x) + (-0.577367 * y) + (-0.16667 * w);
 
-}
-
-
-  
 }
