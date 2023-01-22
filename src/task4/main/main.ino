@@ -49,7 +49,12 @@ void loop() {
 
 void get_f_wheels( float x, float y, float w){
 
-  f_front = (0.6667 * x) + (0 * y) + (-0.1667 * 
+  f_front = (0.66667 * x) + (0 * y) + (-0.16667 * w);
+  f_left = (-0.333 * x) + (0.577367 * y) + (-0.16667 * w);
+  f_right = (-0.333 * x) + (-0.577367 * y) + (-0.16667 * w);
+
+}
+
 
   
 }
