@@ -30,11 +30,128 @@ AccelStepper stepper_rigth(AccelStepper::DRIVER, RIGHT_WHEEL_STEP, RIGHT_WHEEL_D
 void setup() {
   // put your setup code here, to run once:
 
+  stepper_front.setMaxSpeed(3000);
+  stepper_front.setAcceleration(1000);
+  stepper_left.setMaxSpeed(3000);
+  stepper_left.setAcceleration(1000);
+  stepper_right.setMaxSpeed(3000);
+  stepper_right.setAcceleration(1000);
+
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
+  // This loop is prefrablly made for making "L shape"
 
+
+  // Giving constant Y velocity to travel vertical:
+  l_y = 500;
+  l_x = 0;
+  w = 0
+
+  get_f_wheels(l_x, l_y, w);
+
+  // Setting the speed
+
+  stepper_front.setSpeed(f_front);
+  stepper_left.setSpeed(f_left);
+  stepper_right.setSpeed(f_right);
+
+  // Giving the speed to motors
+
+  stepper_front.runSpeed();
+  stepper_left.runSpeed();
+  stepper_right.runSpeed();
+
+  delay(4000);
+
+  // Re-setting the speed
+
+  stepper_front.setSpeed(0);
+  stepper_left.setSpeed(0);
+  stepper_right.setSpeed(0);
+
+  // Giving the speed to motors
+
+  stepper_front.runSpeed();
+  stepper_left.runSpeed();
+  stepper_right.runSpeed();
+
+  delay(100);
+
+
+  // Comming back
+
+  l_y = -500;
+  l_x = 0;
+  w = 0
+
+  get_f_wheels(l_x, l_y, w);
+
+  // Setting the speed
+
+  stepper_front.setSpeed(f_front);
+  stepper_left.setSpeed(f_left);
+  stepper_right.setSpeed(f_right);
+
+  // Giving the speed to motors
+
+  stepper_front.runSpeed();
+  stepper_left.runSpeed();
+  stepper_right.runSpeed();
+
+  delay(4000);
+
+  // Re-setting the speed
+
+  stepper_front.setSpeed(0);
+  stepper_left.setSpeed(0);
+  stepper_right.setSpeed(0);
+
+  // Giving the speed to motors
+
+  stepper_front.runSpeed();
+  stepper_left.runSpeed();
+  stepper_right.runSpeed();
+
+  delay(100);
+
+  // Going to left side in x direction
+
+  l_y = 0;
+  l_x = -500;
+  w = 0
+
+  get_f_wheels(l_x, l_y, w);
+
+  // Setting the speed
+
+  stepper_front.setSpeed(f_front);
+  stepper_left.setSpeed(f_left);
+  stepper_right.setSpeed(f_right);
+
+  // Giving the speed to motors
+
+  stepper_front.runSpeed();
+  stepper_left.runSpeed();
+  stepper_right.runSpeed();
+
+  delay(4000);
+
+  // Re-setting the speed
+
+  stepper_front.setSpeed(0);
+  stepper_left.setSpeed(0);
+  stepper_right.setSpeed(0);
+
+  // Giving the speed to motors
+
+  stepper_front.runSpeed();
+  stepper_left.runSpeed();
+  stepper_right.runSpeed();
+
+  delay(10000);
+  
 }
 
 void get_f_wheels( float x, float y, float w){
