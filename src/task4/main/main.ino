@@ -41,7 +41,40 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  // This loop is prefrablly made for making "L" shape.
+  
+  
+}
+
+void get_f_wheels( float x, float y, float w){
+
+  f_front = (0.66667 * x) + (0 * y) + (-0.16667 * w);
+  f_left = (-0.333 * x) + (0.577367 * y) + (-0.16667 * w);
+  f_right = (-0.333 * x) + (-0.577367 * y) + (-0.16667 * w);
+
+}
+
+void set_run(float f_front, float f_left, float f_right){
+    
+  // Setting the speed
+
+  stepper_front.setSpeed(f_front);
+  stepper_left.setSpeed(f_left);
+  stepper_right.setSpeed(f_right);
+
+  // Giving the speed to motors
+  
+  stepper_front.runSpeed();
+  stepper_left.runSpeed();
+  stepper_right.runSpeed();
+}
+
+void reset_speed(){
+  set_run(0, 0, 0);
+}
+
+void draw_L(){
+
+  // This function is prefrablly made for making "L" shape.
 
 
   // Giving constant Y velocity to travel vertical:
@@ -104,32 +137,68 @@ void loop() {
   set_run(0, 0, 0);
 
   delay(10000);
-  
 }
 
-void get_f_wheels( float x, float y, float w){
+void draw_triangle(){
 
-  f_front = (0.66667 * x) + (0 * y) + (-0.16667 * w);
-  f_left = (-0.333 * x) + (0.577367 * y) + (-0.16667 * w);
-  f_right = (-0.333 * x) + (-0.577367 * y) + (-0.16667 * w);
+  // Giving x and y velocities in order to travel in 60 degree 
 
-}
+  l_y = 500 * 0.866025; // its 500 * sin(60)
+  l_x = 500 * 0.5;      // its 500 * cos(60)
+  w = 0
 
-void set_run(float f_front, float f_left, float f_right){
-    
+  get_f_wheels(l_x, l_y, w);
+
   // Setting the speed
 
-  stepper_front.setSpeed(f_front);
-  stepper_left.setSpeed(f_left);
-  stepper_right.setSpeed(f_right);
+  set_run(f_front, f_left, f_right);
 
-  // Giving the speed to motors
-  
-  stepper_front.runSpeed();
-  stepper_left.runSpeed();
-  stepper_right.runSpeed();
-}
+  delay(4000);
 
-void reset_speed(){
+  // Re-setting the speed
+
   set_run(0, 0, 0);
+
+  delay(100);
+
+
+  // Going 60 degree down wards
+
+  l_y = -500 * 0.866025; // its -500 * sin(60);
+  l_x = 500 * 0.5;       // its 500 * cos(60)
+  w = 0
+
+  get_f_wheels(l_x, l_y, w);
+
+  // Setting the speed
+
+  set_run(f_front, f_left, f_right);
+
+  delay(4000);
+
+  // Re-setting the speed
+
+  set_run(0, 0, 0);
+
+  delay(100);
+
+  // Going to left side in x direction
+
+  l_y = 0;
+  l_x = -500;
+  w = 0
+
+  get_f_wheels(l_x, l_y, w);
+
+  // Setting the speed
+
+  set_run(f_front, f_left, f_right);
+
+  delay(4000);
+
+  // Re-setting the speed
+
+  set_run(0, 0, 0);
+
+  delay(10000);
 }
