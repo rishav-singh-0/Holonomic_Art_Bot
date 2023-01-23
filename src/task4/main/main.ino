@@ -41,10 +41,11 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  // This loop is prefrablly made for making "L shape"
+  // This loop is prefrablly made for making "L" shape.
 
 
   // Giving constant Y velocity to travel vertical:
+
   l_y = 500;
   l_x = 0;
   w = 0
