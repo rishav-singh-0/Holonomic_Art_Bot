@@ -1,10 +1,10 @@
 // Defining direction and step pins for the stepper motor
 
-#define FRONT_WHEEL_DIR 6
-#define FRONT_WHEEL_STEP 7
+#define FRONT_WHEEL_DIR 6           //4A
+#define FRONT_WHEEL_STEP 7          //4B
 
-#define LEFT_WHEEL_DIR 8
-#define LEFT_WHEEL_STEP 9
+#define LEFT_WHEEL_DIR 8            //4C
+#define LEFT_WHEEL_STEP 9           //2B
 
-#define RIGHT_WHEEL_DIR 10
-#define RIGHT_WHEEL_STEP 11
+#define RIGHT_WHEEL_DIR 10          //2A
+#define RIGHT_WHEEL_STEP 11         //1A
