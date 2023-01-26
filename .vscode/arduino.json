@@ -1,0 +1,6 @@
+{
+    "configuration": "eYFi-OTA=wuploadflash,cpu=atmega2560",
+    "board": "eYFi-Mega-ATmega2560-Section:avr:eyfi_atmega2560",
+    "port": "/dev/ttyUSB0",
+    "sketch": "src/task4/main/main.ino"
+}
