@@ -21,6 +21,7 @@ float g_y =0;
 // angular position will be same for both frame local and global frame
 
 float w = 0;
+int multiplier = 1000;
 
 // Creating the objects for controlling the motors
 AccelStepper stepper_front(AccelStepper::DRIVER, FRONT_WHEEL_STEP, FRONT_WHEEL_DIR); 
@@ -38,9 +39,11 @@ void setup() {
   stepper_right.setMaxSpeed(1000.);
   stepper_right.setAcceleration(100.);
 
-  stepper_front.moveTo(0.);
-  stepper_left.moveTo(600.);
-  stepper_right.moveTo(-600.);
+  stepper_front.moveTo(650.);
+  stepper_left.moveTo(650.);
+  stepper_right.moveTo(650.);
+
+  get_f_wheels(0,1,0);
 
 }
 
@@ -48,17 +51,26 @@ void loop() {
   // put your main code here, to run repeatedly:
 
   // set_speed(0, 200, -200);
-  // take_step();
+  boolean cond_f = stepper_front.run(), cond_l = stepper_left.run(), cond_r = stepper_right.run();
 
-  if (!stepper_front.run()) {   // run() returns true as long as the final position has not been reached and speed is not 0.
-    stepper_front.moveTo(-stepper_front.currentPosition());
+  if (!cond_f) {   // run() returns true as long as the final position has not been reached and speed is not 0.
+    // stepper_front.moveTo(-stepper_front.currentPosition());
+    // f_front = -f_front;
+    stepper_front.moveTo(f_front*multiplier);
   }
-  if (!stepper_left.run()) {   // run() returns true as long as the final position has not been reached and speed is not 0.
-    stepper_left.moveTo(-stepper_left.currentPosition());
+
+  if (!cond_l && !cond_r) {   
+    // run() returns true as long as the final position has not been reached and
+    // speed is not 0.
+    // f_left = -f_left;
+    stepper_left.moveTo(f_left*multiplier);
+    stepper_right.moveTo(f_right*multiplier);
   }
-  if (!stepper_right.run()) {   // run() returns true as long as the final position has not been reached and speed is not 0.
-    stepper_right.moveTo(-stepper_right.currentPosition());
-  }
+  // if (!stepper_right.run()) {   // run() returns true as long as the final position has not been reached and speed is not 0.
+  //   // f_right = -f_right;
+  //   stepper_right.moveTo(f_right*multiplier);
+  // }
+  // take_step();
   
 }
 
@@ -76,9 +88,9 @@ void take_step(){
 
   // Giving the speed to motors
   
-  stepper_front.runSpeed();
-  stepper_left.runSpeed();
-  stepper_right.runSpeed();
+  stepper_front.run();
+  stepper_left.run();
+  stepper_right.run();
 }
 
 void get_f_wheels( float x, float y, float w){
