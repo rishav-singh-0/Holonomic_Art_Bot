@@ -31,36 +31,48 @@ AccelStepper stepper_right(AccelStepper::DRIVER, RIGHT_WHEEL_STEP, RIGHT_WHEEL_D
 void setup() {
   // put your setup code here, to run once:
 
-  stepper_front.setMaxSpeed(3000);
-  stepper_front.setAcceleration(1000);
-  stepper_left.setMaxSpeed(3000);
-  stepper_left.setAcceleration(1000);
-  stepper_right.setMaxSpeed(3000);
-  stepper_right.setAcceleration(1000);
+  stepper_front.setMaxSpeed(1000.);
+  stepper_front.setAcceleration(100.);
+  stepper_left.setMaxSpeed(1000.);
+  stepper_left.setAcceleration(100.);
+  stepper_right.setMaxSpeed(1000.);
+  stepper_right.setAcceleration(100.);
+
+  stepper_front.moveTo(0.);
+  stepper_left.moveTo(600.);
+  stepper_right.moveTo(-600.);
 
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  
+
+  // set_speed(0, 200, -200);
+  // take_step();
+
+  if (!stepper_front.run()) {   // run() returns true as long as the final position has not been reached and speed is not 0.
+    stepper_front.moveTo(-stepper_front.currentPosition());
+  }
+  if (!stepper_left.run()) {   // run() returns true as long as the final position has not been reached and speed is not 0.
+    stepper_left.moveTo(-stepper_left.currentPosition());
+  }
+  if (!stepper_right.run()) {   // run() returns true as long as the final position has not been reached and speed is not 0.
+    stepper_right.moveTo(-stepper_right.currentPosition());
+  }
   
 }
 
-void get_f_wheels( float x, float y, float w){
-
-  f_front = (0.66667 * x) + (0 * y) + (-0.16667 * w);
-  f_left = (-0.333 * x) + (0.577367 * y) + (-0.16667 * w);
-  f_right = (-0.333 * x) + (-0.577367 * y) + (-0.16667 * w);
-
-}
-
-void set_run(float f_front, float f_left, float f_right){
+void set_speed(float f_front, float f_left, float f_right){
     
   // Setting the speed
 
   stepper_front.setSpeed(f_front);
   stepper_left.setSpeed(f_left);
   stepper_right.setSpeed(f_right);
+
+}
+
+void take_step(){
 
   // Giving the speed to motors
   
@@ -69,137 +81,10 @@ void set_run(float f_front, float f_left, float f_right){
   stepper_right.runSpeed();
 }
 
-void reset_speed(){
-  set_run(0, 0, 0);
-}
+void get_f_wheels( float x, float y, float w){
 
-void draw_L(){
+  f_front = (0.66667 * x) + (0 * y) + (-0.16667 * w);
+  f_left = (-0.333 * x) + (0.577367 * y) + (-0.16667 * w);
+  f_right = (-0.333 * x) + (-0.577367 * y) + (-0.16667 * w);
 
-  // This function is prefrablly made for making "L" shape.
-
-
-  // Giving constant Y velocity to travel vertical:
-
-  l_y = 500;
-  l_x = 0;
-  w = 0;
-
-  get_f_wheels(l_x, l_y, w);
-
-  // Setting the speed
-
-  set_run(f_front, f_left, f_right);
-
-  delay(4000);
-
-  // Re-setting the speed
-
-  set_run(0, 0, 0);
-
-  delay(100);
-
-
-  // Comming back
-
-  l_y = -500;
-  l_x = 0;
-  w = 0;
-
-  get_f_wheels(l_x, l_y, w);
-
-  // Setting the speed
-
-  set_run(f_front, f_left, f_right);
-
-  delay(4000);
-
-  // Re-setting the speed
-
-  set_run(0, 0, 0);
-
-  delay(100);
-
-  // Going to left side in x direction
-
-  l_y = 0;
-  l_x = -500;
-  w = 0;
-
-  get_f_wheels(l_x, l_y, w);
-
-  // Setting the speed
-
-  set_run(f_front, f_left, f_right);
-
-  delay(4000);
-
-  // Re-setting the speed
-
-  set_run(0, 0, 0);
-
-  delay(10000);
-}
-
-void draw_triangle(){
-
-  // Giving x and y velocities in order to travel in 60 degree 
-
-  l_y = 500 * 0.866025; // its 500 * sin(60)
-  l_x = 500 * 0.5;      // its 500 * cos(60)
-  w = 0;
-
-  get_f_wheels(l_x, l_y, w);
-
-  // Setting the speed
-
-  set_run(f_front, f_left, f_right);
-
-  delay(4000);
-
-  // Re-setting the speed
-
-  set_run(0, 0, 0);
-
-  delay(100);
-
-
-  // Going 60 degree down wards
-
-  l_y = -500 * 0.866025; // its -500 * sin(60);
-  l_x = 500 * 0.5;       // its 500 * cos(60)
-  w = 0;
-
-  get_f_wheels(l_x, l_y, w);
-
-  // Setting the speed
-
-  set_run(f_front, f_left, f_right);
-
-  delay(4000);
-
-  // Re-setting the speed
-
-  set_run(0, 0, 0);
-
-  delay(100);
-
-  // Going to left side in x direction
-
-  l_y = 0;
-  l_x = -500;
-  w = 0;
-
-  get_f_wheels(l_x, l_y, w);
-
-  // Setting the speed
-
-  set_run(f_front, f_left, f_right);
-
-  delay(4000);
-
-  // Re-setting the speed
-
-  set_run(0, 0, 0);
-
-  delay(10000);
 }
