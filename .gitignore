@@ -51,3 +51,8 @@ qtcreator-*
 CATKIN_IGNORE
 ./CMakeLists.txt
 .catkin_workspace
+
+# Packages
+Arduino_as_ISP_eYFi-Mega
+usb_cam
+POST
