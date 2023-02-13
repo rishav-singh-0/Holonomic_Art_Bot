@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+
+'''
+*****************************************************************************************
+*
+*        		===============================================
+*           		    HolA Bot (HB) Theme (eYRC 2022-23)
+*        		===============================================
+*
+*  This script should be used to implement Task 0 of HolA Bot (HB) Theme (eYRC 2022-23).
+*
+*  This software is made available on an "AS IS WHERE IS BASIS".
+*  Licensee/end user indemnifies and will keep e-Yantra indemnified from
+*  any and all claim(s) that emanate from the use of the Software or
+*  breach of the terms of this agreement.
+*
+*****************************************************************************************
+'''
+
+# Team ID:		[ Team-ID ]
+# Author List:		[ Names of team members worked on this file separated by Comma: Name1, Name2, ... ]
+# Filename:		feedback.py
+# Functions:
+#			[ Comma separated list of functions in this file ]
+# Nodes:		Add your publishing and subscribing node
+
+
+######################## IMPORT MODULES ##########################
+
+import numpy as np				# If you find it required
+import rospy 				
+from sensor_msgs.msg import Image 	# Image is the message type for images in ROS
+from cv_bridge import CvBridge	# Package to convert between ROS and OpenCV Images
+import cv2				# OpenCV Library
+from geometry_msgs.msg import Pose2D	# Required to publish ARUCO's detected position & orientation
+
+class Feedback():
+	def __init__(self):
+		############################ GLOBALS #############################
+
+		self.aruco_msg = Pose2D()
+		self.current_frame = np.empty([])
+
+		self.aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
+		self.aruco_params = cv2.aruco.DetectorParameters_create()
+
+		#################### ROS Node ############################
+
+		rospy.init_node('aruco_feedback_node')
+		rospy.Subscriber('overhead_cam/image_raw', Image, self.callback)
+		self.aruco_publisher = rospy.Publisher('detected_aruco', Pose2D, queue_size=10)
+
+	##################### FUNCTION DEFINITIONS #######################
+
+	def centroid(self, arr):
+		length = arr.shape[0]
+		sum_x = np.sum(arr[:, 0])
+		sum_y = np.sum(arr[:, 1])
+		return sum_x/length, sum_y/length
+
+	def create_vector(self, point_1, point_2):
+		return np.array(point_2 - point_1)
+
+	def unit_vector(self, vector):
+		""" Returns the unit vector of the vector.  """
+		return vector / np.linalg.norm(vector)
+	
+	def angle_between(self, v1, v2):
+		""" 
+		Returns the angle in radians between vectors 'v1' and 'v2'
+		"""
+		v1_u = self.unit_vector(v1)
+		v2_u = self.unit_vector(v2)
+		theta = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+		# print(v1_u, v2_u, theta)
+
+		if(v1[0]>0):
+			return -theta
+		return theta
+
+	def callback(self, data):
+		# Bridge is Used to Convert ROS Image message to OpenCV image
+		br = CvBridge()
+		# rospy.loginfo("receiving camera frame")
+		get_frame = br.imgmsg_to_cv2(data, "mono8")		# Receiving raw image in a "grayscale" format
+		self.current_frame = cv2.resize(get_frame, (500, 500), interpolation = cv2.INTER_LINEAR)
+
+		# Detecting aruco marker
+		(corners, ids, _) = cv2.aruco.detectMarkers(self.current_frame, self.aruco_dict, parameters=self.aruco_params)
+		# marking the detected area
+		cv2.aruco.drawDetectedMarkers(self.current_frame, corners)
+
+		# taking the 1st detected aruco marker
+		try:
+			ar = corners[0][0]
+		except IndexError as e:
+			rospy.logerr(e)
+			return
+		
+		# calculating x, y by taking cetroid of the quadilateral
+		x, y = self.centroid(ar)
+
+		# taking 2 points for determining line vector(box axis)
+		v1 = self.create_vector(np.array([x, y]), ar[0]/2+ar[1]/2) 	#bot axis
+		v2 = np.array([0, -1])										#camera axis
+		# angle between bot axis and camera axis vectors will determine bot orietation
+		theta = self.angle_between(v1, v2)
+		# print(x, y, theta)
+			
+		self.publish(x, y, theta)
+		
+		cv2.imshow("Camera Window", self.current_frame)
+		cv2.waitKey(10)
+
+		# adding delay
+		rospy.sleep(0.001)
+
+	def publish(self, x, y, theta):
+		self.aruco_msg.x = x
+		self.aruco_msg.y = y
+		self.aruco_msg.theta = theta
+		self.aruco_publisher.publish(self.aruco_msg)
+		
+	def main(self):
+		rospy.spin()
+  
+if __name__ == '__main__':
+	feedback = Feedback()
+	feedback.main()
