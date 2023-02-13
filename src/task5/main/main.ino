@@ -26,8 +26,6 @@ typedef struct {
   float maxAccleration;
 } Velocity;
 
-float force[3] = {0, 0, 0};
-
 // initializing velocity variables 
 
 Velocity vel = {
@@ -39,6 +37,8 @@ Velocity vel = {
   .maxSpeed = 600,
   .maxAccleration = 100,
 };
+
+Wheel wheel[3] = {{0, 0}, {0, 0}, {0, 0}};
 
 // Creating the objects for controlling the motors
 AccelStepper stepper_front(AccelStepper::DRIVER, FRONT_WHEEL_STEP, FRONT_WHEEL_DIR); 
@@ -58,85 +58,79 @@ void setup() {
   stepper_right.setMaxSpeed(vel.maxSpeed);
   stepper_right.setAcceleration(vel.maxAccleration);
 
-  stepper_front.move(0.);
-  stepper_left.move(0.);
-  stepper_right.move(0.);
+  stepper_front.move(670.);
+  stepper_left.move(670.);
+  stepper_right.move(670.);
 
   get_f_wheels(1,1,1);
 
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  
+  run_speed();
 
-  boolean cond_f = stepper_front.runSpeed(), cond_l = stepper_left.runSpeed(), cond_r = stepper_right.runSpeed();
+  // static int count = 0;
+  // count++;
+  // if(count>10000){
+  //   count = 0;
+  //   Serial.print ("   ");
+  //   Serial.print(stepper_front.speed());
+  //   Serial.print ("   ");
+  //   Serial.print(stepper_left.speed());
+  //   Serial.print ("   ");
+  //   Serial.print(stepper_right.speed());
+  //   Serial.print ("   ");
+  //   Serial.print ("\n");
+  // }
 
-  static int count = 0;
-  count++;
-  if(count>10000){
-    count = 0;
-    Serial.print ("   ");
-    Serial.print(stepper_front.speed());
-    Serial.print ("   ");
-    Serial.print(stepper_left.speed());
-    Serial.print ("   ");
-    Serial.print(stepper_right.speed());
-    Serial.print ("   ");
-    Serial.print ("\n");
+  // checking if bot is ready to move
+  static bool ready = false;
+  if (!ready && ) {
+    continue;
   }
-    
-
-  // run() returns true as long as the final position has not been reached and
-  // speed is not 0.
-
-  bool ready = false;
-  if (!ready && !cond_f && !cond_l && !cond_r) {
+  
+  // validating conditions before moving
+  if (!ready && !cond_f && !cond_l && !cond_r){
     ready = true;
   }
-    // f_left = -f_left;
-    // stepper_left.move(500);
-    // stepper_right.move(500);
 
-    stepper_front.setSpeed(force[FRONT]*vel.maxSpeed);
-    stepper_left.setSpeed(force[LEFT]*vel.maxSpeed);
-    stepper_right.setSpeed(force[RIGHT]*vel.maxSpeed);
+  // setting new speed for each wheel
+  set_speed(
+    wheel[FRONT].force % vel.maxSpeed,
+    wheel[LEFT].force % vel.maxSpeed,
+    wheel[RIGHT].force % vel.maxSpeed
+  );
 
-    // int s1 =  stepper_front.speed();
-    // int s2 =  stepper_left.speed();
-    // int s3 =  stepper_right.speed();
-    // int avg = (s1+s2+s3)/3;
-
-    // stepper_front.setAcceleration((avg*s1*s1)%200);
-    // stepper_left.setAcceleration((avg*s2*s2)%200);
-    // stepper_right.setAcceleration((avg*s3*s3)%200);
-    // stepper_front.setAcceleration(100);
-    // stepper_left.setAcceleration(100);
-    // stepper_right.setAcceleration(100);
-  
 }
 
 void set_speed(float f_front, float f_left, float f_right){
+  /*
+  Sets new speed
+  */
     
   // Setting the speed
-  stepper_front.setSpeed(f_front); 
-  stepper_left.setSpeed(f_left); 
-  stepper_right.setSpeed(f_right);
-
+  stepper_front.setSpeed(wheel[FRONT].force);
+  stepper_left.setSpeed(wheel[LEFT].force);
+  stepper_right.setSpeed(wheel[RIGHT].force);
 }
 
-void take_step(){
+void run_speed(){
+  /*
+  Run the motors
+  Store if motor has moved
+  */
 
-  // Giving the speed to motors
-  
-  stepper_front.run();
-  stepper_left.run();
-  stepper_right.run();
+  wheel[FRONT].isRunning = stepper_front.runSpeed();
+  wheel[LEFT].isRunning = stepper_left.runSpeed();
+  wheel[RIGHT].isRunning = stepper_right.runSpeed();
+
 }
 
 void get_f_wheels( float x, float y, float w){
 
-  force[FRONT] = (0.66667 * x) + (0 * y) + (-0.16667 * w);
-  force[LEFT] = (-0.333 * x) + (0.577367 * y) + (-0.16667 * w);
-  force[RIGHT] = (-0.333 * x) + (-0.577367 * y) + (-0.16667 * w);
+  wheel[FRONT].force  = (0.66667 * x) + (0 * y) + (-0.16667 * w);
+  wheel[LEFT].force  = (-0.333 * x) + (0.577367 * y) + (-0.16667 * w);
+  wheel[RIGHT].force  = (-0.333 * x) + (-0.577367 * y) + (-0.16667 * w);
 
 }
