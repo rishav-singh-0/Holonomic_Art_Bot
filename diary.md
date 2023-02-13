@@ -129,3 +129,10 @@ fine but it was useless here.
 Wrote code for moving bot back and forth with manually rotating 2 wheels, which
 works fine. Now i have to move to the next level where giving `error` (set
 point) in x, y or w would convert to wheel speed.
+
+## 12th Feb 2023
+Made the bot travel in any given direction i.e. any combination of x, y and w.
+Gave 1, 1, 1 to x, y & w respectively to complete a circle. 
+
+Fixed the camera on seeling fan which is 2.5 meters at height, 
+recalibrated the camera with 110 samples. Tested detection of 5 arucos with ros which works perfectly fine.
