@@ -28,7 +28,6 @@
 ################### IMPORT MODULES #######################
 
 import rospy
-import signal		# To handle Signals by OS/user
 import sys		# To handle Signals by OS/user
 import numpy as np
 
@@ -91,7 +90,6 @@ class Controller():
 
 		rospy.init_node('controller_node')
 
-		signal.signal(signal.SIGINT, self.signal_handler)
 		self.rate = rospy.Rate(200)
 
 		# self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
@@ -102,18 +100,7 @@ class Controller():
 		rospy.Subscriber('detected_aruco',Pose2D,self.aruco_feedback_Cb)
 		rospy.Subscriber('task2_goals',PoseArray,self.task2_goals_Cb)
 		
-        #ShutdownHook
-		rospy.wait_for_service('/gazebo/reset_world')
-		self.reset_world = rospy.ServiceProxy('/gazebo/reset_world',Empty)
-
 	##################### FUNCTION DEFINITIONS #######################
-
-	def signal_handler(self, sig, frame):
-		
-		# NOTE: This function is called when a program is terminated by "Ctr+C" i.e. SIGINT signal 	
-		print('\nClean-up !')
-		self.cleanup()
-		sys.exit(0)
 
 	def cleanup(self):
 		force_zero = Wrench()
