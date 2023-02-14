@@ -4,8 +4,7 @@
 const char* ssid = "Dark_Demon";                   //Enter your wifi hotspot ssid
 const char* password =  "apna_use_kar";            //Enter your wifi hotspot password
 const uint16_t port = 8002;
-const char * host = "18:1d:ea:45:9a:8e";           //Enter the ip address of your laptop after connecting it to wifi hotspot
-
+const char * host = "192.168.43.129";           //Enter the ip address of your laptop after connecting it to wifi hotspot
 
 
 char incomingPacket[80];
@@ -14,11 +13,10 @@ WiFiClient client;
 String msg = "0";
 
 
-
-
 void setup(){
    
   Serial.begin(115200);                          //Serial to print data on Serial Monitor
+  Serial.print("Hello Rishav!\n");
   Serial1.begin(115200,SERIAL_8N1,33,32);        //Serial to transfer data between ESP and AVR. The Serial connection is inbuilt.
   
   
