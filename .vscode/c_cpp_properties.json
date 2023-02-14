@@ -3,8 +3,9 @@
     "configurations": [
         {
             "name": "Arduino",
-            "compilerPath": "/home/rishav/Downloads/arduino-1.8.19/hardware/tools/avr/bin/avr-g++",
+            "compilerPath": "/mnt/STORAGE/Applications/src/arduino-1.8.19/hardware/tools/avr/bin/avr-g++",
             "compilerArgs": [
+                "-w",
                 "-std=gnu++11",
                 "-fpermissive",
                 "-fno-exceptions",
@@ -18,9 +19,9 @@
                 "/home/rishav/.arduino15/packages/eYFi-Mega-ATmega2560-Section/hardware/avr/1.0.0/cores/arduino",
                 "/home/rishav/.arduino15/packages/eYFi-Mega-ATmega2560-Section/hardware/avr/1.0.0/variants/eyfi_mega",
                 "/home/rishav/Arduino/libraries/AccelStepper/src",
-                "/home/rishav/Downloads/arduino-1.8.19/hardware/tools/avr/lib/gcc/avr/7.3.0/include",
-                "/home/rishav/Downloads/arduino-1.8.19/hardware/tools/avr/lib/gcc/avr/7.3.0/include-fixed",
-                "/home/rishav/Downloads/arduino-1.8.19/hardware/tools/avr/avr/include"
+                "/mnt/STORAGE/Applications/src/arduino-1.8.19/hardware/tools/avr/lib/gcc/avr/7.3.0/include",
+                "/mnt/STORAGE/Applications/src/arduino-1.8.19/hardware/tools/avr/lib/gcc/avr/7.3.0/include-fixed",
+                "/mnt/STORAGE/Applications/src/arduino-1.8.19/hardware/tools/avr/avr/include"
             ],
             "forcedInclude": [
                 "/home/rishav/.arduino15/packages/eYFi-Mega-ATmega2560-Section/hardware/avr/1.0.0/cores/arduino/Arduino.h"
