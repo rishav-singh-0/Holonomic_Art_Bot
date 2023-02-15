@@ -93,6 +93,7 @@ class Feedback():
 		# Camera window
 		cv2.imshow("Camera Window", self.current_frame)
 		cv2.waitKey(10)  # adding delay
+		print(ids, corners)
 
 		# taking the 1st detected aruco marker
 		try:
@@ -128,3 +129,4 @@ class Feedback():
 if __name__ == '__main__':
 	feedback = Feedback()
 	feedback.main()
+
