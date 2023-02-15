@@ -1,6 +1,7 @@
 ## 6th Jan 2023
 After matrix, went to Ardra Lab for working on hola bot. Felt new experience
 with cutting, grinding and designing.
+![alt](https://)
 
 ## 7th Jan 2023
 slept till 6pm then again started building bot at ardra lab. Got a circular
@@ -8,35 +9,36 @@ container and fixed it on top of main body.
 
 Searched and found a perfect sized (21 cm diameter and 10 cm height) plastic
 box(dabba) which will act as 
+![Plastic Box Image](https://)
 
 ## 11th Jan 2023
 Ordered 5 cm M3 Studs from electronicscomp.com.
+![Studs image](https://)
 
-## 
+## 12th Jan 2023
 Reading about PWM pin config of eYFI Mega 
 Finding a way to control stepper motors in non-blocking manner.
 
-##
 Got a library `AccelStepper`, and reading its documentation from `Hackaday.io`
 [link](https://hackaday.io/project/183279-accelstepper-the-missing-manual/details)
 
 ## 14th Jan 2023
 Runebook Launched
 
-## 
-Not able to find M3 Screws
-
-## 
+## 16th Jan 2023
+Still unable to find M3 Screws
 
 ## 22nd Jan 2023
 Testing motordrivers on breadboard. Not able to give power efficiantly to the
 motor drivers. Currently trying a hacky way by bending jumpers and connecting
 it to breadboard. Burnet my fingers by accidentaly sorting terminals of the
 battry while removing insulation(rubber coating).
+![Battery wires](https://)
 
 ## 23rd Jan 2023
 Connected female sockets on perfboard for all 3 motor drivers and connected all
 the vcc and ground pins. Also connected the power supply to perfboard. 
+![Perfboard first image](https://)
 
 ## 25th Jan 2023
 Soldered the leftover pins of DIR and STEP pins of motor driver to mega board.
@@ -63,6 +65,7 @@ So now back to square one with the motor drivers. But found a hacky way for M3
 screws, removed 2 out of 4 screws from each motor clamps, and took 2 jumbo size
 screws which came along motors, and connected both perfboard and Mega to their
 places(Temporary solution).
+![Temporary solution](https://)
 
 ## 31st Jan 2023
 Continued debugging, and found left_wheel motor driver position is not working.
@@ -70,6 +73,7 @@ And i was suspecting the pin numbers used for left_wheel to be wrong. Because
 the connections are made in a manner that if middle wheel(left) motor driver's
 connection is not ok, then either side of the motors would also not be
 working(series connection). 
+![Two wheels working video](https://)
 
 ## 3th Feb 2023
 Not at all getting motivated to move further, reasons could be... things not
@@ -81,6 +85,7 @@ Task 5 got released, yet we have not submetted task 4. Started testing camera
 calibration script, just to get motivated again. At first the readymade script
 was showing error. After googling for a bit, i found that i need to clone an
 extra repo of `usb_cam` inside `src` directory of catkin workspace.
+[link for usb_cam](https://)
 
 ## 5th Feb 2023
 Printed checker board on A4 paper and stuck it on the writing pad, calibrated
@@ -93,6 +98,7 @@ again, then tried wired flashing but it was taking forever but nothing was
 happening. Tried to search on discussion forum and saw the same problem was
 mentioned by someone, and came to know that the bootloader got RIP and found a
 method to load the bootloader again through another arduino.
+![camera calibration image](https://)
 
 ## 6th Feb 2023
 Found an Arduino Mega board from our senior, started reading Readme page for
@@ -109,6 +115,7 @@ connections.
 
 Never thought it would feel so relieved after running LED blink program on eYFY
 Mega before. Still i dont know why the bootloader got burned.
+![video led blink](https://)
 
 ## 9th Feb 2023
 Testing each and every pwm pins for both as a DIR and as a STEP pin by pluging
@@ -136,3 +143,13 @@ Gave 1, 1, 1 to x, y & w respectively to complete a circle.
 
 Fixed the camera on seeling fan which is 2.5 meters at height, 
 recalibrated the camera with 110 samples. Tested detection of 5 arucos with ros which works perfectly fine.
+![camera setup video](https://)
+
+## 13rd Feb 2023
+ESP32 not connecting to wifi hotspot of phone
+
+## 14th Feb 2023
+Seems like S2 switch was wrongly toggled and not ESP32 connected to hotspor and
+works fine. Tested sending data stream and printing it. Now whats remaning is
+connect ros topic with this out-stream.
+
