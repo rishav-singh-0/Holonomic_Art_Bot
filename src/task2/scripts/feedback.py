@@ -47,7 +47,7 @@ class Feedback():
 		#################### ROS Node ############################
 
 		rospy.init_node('aruco_feedback_node')
-		rospy.Subscriber('usb_cam/image_raw', Image, self.callback)
+		rospy.Subscriber('overhead_cam/image_raw', Image, self.callback)
 		self.aruco_publisher = rospy.Publisher('detected_aruco', Pose2D, queue_size=10)
 
 	##################### FUNCTION DEFINITIONS #######################
@@ -90,10 +90,6 @@ class Feedback():
 		# marking the detected area
 		cv2.aruco.drawDetectedMarkers(self.current_frame, corners)
 
-		cv2.imshow("Camera Window", self.current_frame)
-		cv2.waitKey(10)		# adding delay
-		print(ids)
-
 		# taking the 1st detected aruco marker
 		try:
 			ar = corners[0][0]
@@ -113,6 +109,9 @@ class Feedback():
 			
 		self.publish(x, y, theta)
 		
+		cv2.imshow("Camera Window", self.current_frame)
+		cv2.waitKey(10)
+
 		# adding delay
 		rospy.sleep(0.001)
 
