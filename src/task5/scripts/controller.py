@@ -28,7 +28,9 @@
 ################### IMPORT MODULES #######################
 
 import rospy
+import signal		# To handle Signals by OS/user
 import sys		# To handle Signals by OS/user
+import socket
 import numpy as np
 
 from geometry_msgs.msg import Wrench		# Message type used for publishing force vectors
@@ -90,7 +92,12 @@ class Controller():
 
 		rospy.init_node('controller_node')
 
+		signal.signal(signal.SIGINT, self.signal_handler)
 		self.rate = rospy.Rate(200)
+
+		# socket connection
+		self.connection =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.socket_conn = 0
 
 		# self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 		self.right_wheel_pub = rospy.Publisher('/right_wheel_force', Wrench, queue_size=10)
@@ -135,6 +142,36 @@ class Controller():
 					self.hola_position[0] == None
 		# print(self.x_goals,self.hola_position)
 		return condition
+	
+	def connect_socket(self):
+
+		ip = "192.168.43.129"     # IP address of laptop after connecting it to WIFI hotspot
+
+		self.connection.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		self.connection.bind((ip, 8002))
+		self.connection.listen()
+		self.socket_conn, addr = self.connection.accept()
+		rospy.loginfo(f"Connected by {addr}")
+	
+	def socket_send_data(self):
+		for i in range(10):
+			data = {-100.32, -100, -100.025}
+
+			rec_data = self.socket_conn.recv(1024)
+			# print(self.wheel_force)
+			print(data)
+			print(rec_data)
+			self.socket_conn.sendall(str.encode(str(data)))
+			# self.socket_conn.sendall(str.encode(str(self.wheel_force)))
+			# counter += 1
+			rospy.sleep(0.1)
+
+	def signal_handler(self, sig, frame):
+		print('Clean-up !')
+		self.connection.close()
+		print("cleanup done")
+		sys.exit(0)
+
 
 	def threshold_box(self):
 		condition = abs(self.error_global[0]) < 5 and \
@@ -216,34 +253,36 @@ class Controller():
 		while not rospy.is_shutdown():
 			
 			# checking if the subscibed variables are on position
-			if self.is_ready():
-				print("Waiting!")
-				self.rate.sleep()
-				continue
+			# if self.is_ready():
+			#     print("Waiting!")
+			#     self.rate.sleep()
+			#     continue
 			
 			# removing error while going to next test case
-			try:
-				self.goal_position = [
-					self.x_goals[self.index], 
-					self.y_goals[self.index], 
-					self.theta_goals[self.index]
-				]
-			except IndexError as e:
-				rospy.logerr(e)
-				self.rate.sleep()
-				continue
+			# try:
+			#     self.goal_position = [
+			#         self.x_goals[self.index], 
+			#         self.y_goals[self.index], 
+			#         self.theta_goals[self.index]
+			#     ]
+			# except IndexError as e:
+			#     rospy.logerr(e)
+			#     self.rate.sleep()
+			#     continue
 
-			self.position_controller()
-			self.inverse_kinematics()
+			# self.position_controller()
+			# self.inverse_kinematics()
 
-			self.publish_force()
+			# self.publish_force()
+			self.socket_send_data()
 			self.rate.sleep()
-			self.next_goal()
+			# self.next_goal()
 
 
 if __name__ == "__main__":
 	try:
 		control = Controller()
+		control.connect_socket()
 		control.main()
 	except rospy.ROSInterruptException:
 		pass
