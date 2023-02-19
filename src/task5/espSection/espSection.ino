@@ -6,6 +6,8 @@ const char* password =  "apna_use_kar";            //Enter your wifi hotspot pas
 const uint16_t port = 8002;
 const char * host = "192.168.43.129";           //Enter the ip address of your laptop after connecting it to wifi hotspot
 
+unsigned long previousMillis = 0;
+unsigned long interval = 8000;
 
 char incomingPacket[80];
 WiFiClient client;
@@ -26,6 +28,15 @@ void setup(){
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.println("...");
+
+    unsigned long currentMillis = millis();
+    // if WiFi is down, try reconnecting
+    if (currentMillis - previousMillis >= interval) {
+      Serial.print(millis());
+      Serial.println("Reconnecting to WiFi...");
+      ESP.restart();
+      previousMillis = currentMillis;
+    }
   }
  
   Serial.print("WiFi connected with IP: ");
@@ -47,5 +58,5 @@ void loop() {
       Serial.println(msg);                        //Print data on Serial monitor
       Serial1.println(msg);                       //Send data to AVR
       Serial1.flush();
-    }
+  }
 }
