@@ -48,9 +48,15 @@ class Controller():
     def __init__(self):
         ################## GLOBAL VARIABLES ######################
 
-        self.x_goals = []
-        self.y_goals = []
-        self.theta_goals = []
+        # HomePose = [250, 250, 0]:
+        # i) [350,300, pi/4]
+        # ii) [150,300, 3pi/4]
+        # iii) [150,150, -3pi/4]
+        # iv) [350,150, -pi/4]
+        PI = math.pi
+        self.x_goals = [250, 350, 150, 150, 350, 250]
+        self.y_goals = [250, 300, 300, 150, 150, 250]
+        self.theta_goals = [0, PI/4, 3*PI/4, -3*PI/4, -PI/4, 0]
 
         # force vectors initialization
         self.right_wheel = Wrench()
@@ -58,19 +64,19 @@ class Controller():
         self.front_wheel = Wrench()
 
         # position as [x, y, theta]
-        self.hola_position = [None, None, None]
+        self.hola_position = [0, 0, 0]
         self.goal_position = [None, None, None]
 
         self.error_global = [0, 0, 0]
         self.error_local = {'x':0, 'y':0}       # only needs [x, y]
 
-        self.index = 0					# For travercing the setpoints
+        self.goal_index = 0					# For travercing the setpoints
 
         # variables for P controller
-        self.const_vel = [0.003, 0.06]			# [kp_xy, kp_w]
-        self.const_force = [2000, 0.02, 0.0]	# [kp, kd, ki]
-        # self.err_prev = { 'front':0, 'left':0, 'right':0 }
-        # self.err_sum = [0,0,0]
+        self.const_vel = [0.006, 0.63]			# [kp_xy, kp_w]
+        self.const_force = [2.1*200.0, 4*0.002, 4*0.00]	# [kp, kd, ki]
+        self.err_prev = { 'front':0, 'left':0, 'right':0 }
+        self.err_sum = [0,0,0]
 
         # Variables for wheel force
         self.wheel_force = { 'front': None, 'left': None, 'right': None }
@@ -105,7 +111,7 @@ class Controller():
         self.left_wheel_pub = rospy.Publisher('/left_wheel_force', Wrench, queue_size=10)
 
         rospy.Subscriber('detected_aruco',Pose2D,self.aruco_feedback_Cb)
-        rospy.Subscriber('task2_goals',PoseArray,self.task2_goals_Cb)
+        # rospy.Subscriber('task2_goals',PoseArray,self.task2_goals_Cb)
         
     ##################### FUNCTION DEFINITIONS #######################
 
@@ -115,7 +121,7 @@ class Controller():
         self.right_wheel_pub.publish(force_zero)
         self.front_wheel_pub.publish(force_zero)
         self.left_wheel_pub.publish(force_zero)
-        self.reset_world()
+        # self.reset_world()
     
     def task2_goals_Cb(self, msg):
         self.x_goals.clear()
@@ -154,42 +160,38 @@ class Controller():
         rospy.loginfo(f"Connected by {addr}")
     
     def socket_send_data(self):
-        for i in range(10):
-            data = {-100.32, -100, -100.025}
-
-            rec_data = self.socket_conn.recv(1024)
-            # print(self.wheel_force)
-            print(data)
-            print(rec_data)
-            self.socket_conn.sendall(str.encode(str(data)))
-            # self.socket_conn.sendall(str.encode(str(self.wheel_force)))
-            # counter += 1
-            rospy.sleep(0.1)
+        data = list(self.wheel_force.values())
+        data = str([round(i, 2) for i in self.wheel_force.values()]) + '\n'
+        rec_data = self.socket_conn.recv(1024)
+        # rospy.loginfo(data)
+        # rospy.loginfo(rec_data)
+        self.socket_conn.sendall(str.encode(data))
+        rospy.sleep(0.1)
 
     def signal_handler(self, sig, frame):
         print('Clean-up !')
         self.connection.close()
+        self.cleanup()
         print("cleanup done")
         sys.exit(0)
 
-
     def threshold_box(self):
-        condition = abs(self.error_global[0]) < 5 and \
-                    abs(self.error_global[1]) < 5 and \
-                    abs(math.degrees(self.error_global[2])) <= 1
+        condition = abs(self.error_global[0]) < 4 and \
+                    abs(self.error_global[1]) < 4 and \
+                    abs(math.degrees(self.error_global[2])) <= 5
         return condition
 
     def next_goal(self):
         condition = self.threshold_box()
         if(condition):
-            if(self.index < len(self.x_goals)-1):
-                self.index += 1
+            if(self.goal_index < len(self.x_goals)-1):
+                self.goal_index += 1
                 rospy.sleep(0.1)
-                # rospy.loginfo(self.index)
+                rospy.loginfo("Goal reached " + str(self.goal_index))
                 self.goal_position = [
-                    self.x_goals[self.index], 
-                    self.y_goals[self.index], 
-                    self.theta_goals[self.index]
+                    self.x_goals[self.goal_index], 
+                    self.y_goals[self.goal_index], 
+                    self.theta_goals[self.goal_index]
                 ]
 
     def safety_check(self, vel):
@@ -211,10 +213,10 @@ class Controller():
         self.wheel_force['right'] = force[2][0]
 
         for i in ['front', 'left', 'right']:
-            self.wheel_force[i] = self.const_force[0]*self.wheel_force[i]
-                                # + self.const_force[1]*(self.wheel_force[i] - self.err_prev[i])
+            self.wheel_force[i] = self.const_force[0]*self.wheel_force[i] \
+                                    + self.const_force[1]*(self.wheel_force[i] - self.err_prev[i])
                                 # + self.const_force[2]*self.sum[i]
-        # self.err_prev = self.wheel_force
+        self.err_prev = self.wheel_force
         # self.err_sum = [self.sum[0] + self.wheel_force['front'], self.sum[1] + self.wheel_force['left'], self.sum[2] + self.wheel_force['right']]
 
     def position_controller(self):
@@ -253,30 +255,31 @@ class Controller():
         while not rospy.is_shutdown():
             
             # checking if the subscibed variables are on position
-            # if self.is_ready():
-            #     print("Waiting!")
-            #     self.rate.sleep()
-            #     continue
+            if self.is_ready():
+                print("Waiting!")
+                self.rate.sleep()
+                continue
             
             # removing error while going to next test case
-            # try:
-            #     self.goal_position = [
-            #         self.x_goals[self.index], 
-            #         self.y_goals[self.index], 
-            #         self.theta_goals[self.index]
-            #     ]
-            # except IndexError as e:
-            #     rospy.logerr(e)
-            #     self.rate.sleep()
-            #     continue
+            try:
+                self.goal_position = [
+                    self.x_goals[self.goal_index], 
+                    self.y_goals[self.goal_index], 
+                    self.theta_goals[self.goal_index]
+                ]
+            except IndexError as e:
+                rospy.logerr(e)
+                self.rate.sleep()
+                continue
 
-            # self.position_controller()
-            # self.inverse_kinematics()
+            self.position_controller()
+            self.inverse_kinematics()
+            # print(self.hola_position)
 
-            # self.publish_force()
+            self.publish_force()
             self.socket_send_data()
             self.rate.sleep()
-            # self.next_goal()
+            self.next_goal()
 
 
 if __name__ == "__main__":
