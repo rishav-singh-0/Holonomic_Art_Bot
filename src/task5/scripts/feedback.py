@@ -35,41 +35,6 @@ import cv2				# OpenCV Library
 from geometry_msgs.msg import Pose2D	# Required to publish ARUCO's detected position & orientation
 
 
-aruco_ids = [[10], [12], [15], [8], [4]]
-
-aruco_corners = [
-    np.array([[
-        [336., 400.],
-        [351., 399.],
-        [349., 418.],
-        [334., 420.]]], ),
-
-    np.array([[
-        [90., 381.],
-        [104., 384.],
-        [105., 403.],
-        [91., 401.]]], ),
-
-    np.array([[
-        [316., 312.],
-        [321., 288.],
-        [338., 295.],
-        [333., 319.]]], ),
-
-    np.array([[
-        [340.,  60.],
-        [354.,  64.],
-        [354.,  81.],
-        [340.,  78.]]], ),
-
-    np.array([[
-        [100.,  54.],
-        [113.,  52.],
-        [111.,  70.],
-        [98.,  72.]]], )
-
-]
-
 class Feedback():
     def __init__(self):
         ############################ GLOBALS #############################
@@ -79,6 +44,9 @@ class Feedback():
 
         self.aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
         self.aruco_params = cv2.aruco.DetectorParameters_create()
+        
+        self.bot_centroid = [250, 250]
+        self.theta = 0
 
         #################### ROS Node ############################
 
@@ -116,56 +84,11 @@ class Feedback():
             return -theta
         return theta
 
-    def undistort_img(self, img):
-        '''
-        camera_matrix:
-          rows: 3
-          cols: 3
-          data: [446.5657371341725, 0, 320.5898932104892, 0, 444.2909319311765, 255.2938346227155, 0, 0, 1]
-        distortion_model: plumb_bob
-        distortion_coefficients:
-          rows: 1
-          cols: 5
-          data: [-0.3777466493179079, 0.1200715128128287, -0.004146316879421532, -0.003046305956113639, 0]
-        rectification_matrix:
-          rows: 3
-          cols: 3
-          data: [1, 0, 0, 0, 1, 0, 0, 0, 1]
-        projection_matrix:
-          rows: 3
-          cols: 4
-          data: [338.8027648925781, 0, 314.7816814632406, 0, 0, 386.9388122558594, 257.0193612639923, 0, 0, 0, 1, 0]
-        '''
-        
-        # camera_matrix
-        K = np.array([[446.5657371341725, 0, 320.5898932104892], [0, 444.2909319311765, 255.2938346227155], [0, 0, 1]])
-        
-        # distortion_coefficients
-        D = np.array([-0.3777466493179079, 0.1200715128128287, -0.004146316879421532, -0.003046305956113639])
-        # D = np.array([0.1200715128128287, -0.004146316879421532, -0.003046305956113639, 0])
-        # D = np.array([-0.3777466493179079, 0.1200715128128287, -0.004146316879421532, 0])
-        
-        # rectification_matrix
-        R = np.eye(3)
-        
-        # projection_matrix
-        P = np.array([[338.8027648925781, 0, 314.7816814632406, 0], [0, 386.9388122558594, 257.0193612639923, 0], [0, 0, 1, 0]])
-        
-        # dimentions
-        img_dim = (500, 500)
-        
-        map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, R, P, img_dim, cv2.CV_16SC2)
-        # print(map1, map2)
-
-        undistorted_img = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-
-        # new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(K, D, img_dim, np.eye(3), balance=balance)
-        # map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), new_K, img_dim, cv2.CV_16SC2)
-        # undist_image = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-
-        return undistorted_img
-
-
+    def side_length(self, p1, p2):
+        """
+        Takes two points and gives length between them
+        """
+        return pow(pow(p1[0]-p2[0], 2) + pow(p1[1]-p2[1], 2), 0.5)
 
     def callback(self, data):
         # Bridge is Used to Convert ROS Image message to OpenCV image
@@ -173,28 +96,33 @@ class Feedback():
         # rospy.loginfo("receiving camera frame")
         get_frame = br.imgmsg_to_cv2(data, "mono8")		# Receiving raw image in a "grayscale" format
         self.current_frame = cv2.resize(get_frame, (500, 500), interpolation = cv2.INTER_LINEAR)
-        
-        # self.current_frame = self.undistort_img(self.current_frame)
+        # cv2.imwrite("/home/rishav/out.png", self.current_frame)
         
         # Detecting aruco marker
         (corners, ids, _) = cv2.aruco.detectMarkers(self.current_frame, self.aruco_dict, parameters=self.aruco_params)
         # # marking the detected area
-        cv2.aruco.drawDetectedMarkers(self.current_frame, corners)
+        cv2.aruco.drawDetectedMarkers(self.current_frame, corners, ids)
+
+        # ids, corners = aruco_ids, aruco_corners
+        # print(corners)
+        
+        arena = {"4": [0, 0], "8": [0, 0], "10": [0, 0], "12":[0, 0]}
+        length_ids = len(ids)
+
+        cv2.putText(self.current_frame, f"{self.bot_centroid} {self.theta}",
+            (10, 20), cv2.FONT_HERSHEY_SIMPLEX,
+            0.5, (0, 255, 0), 2)
 
         # Camera window
         cv2.imshow("Camera Window", self.current_frame)
         cv2.waitKey(10)  # adding delay
-        # ids, corners = aruco_ids, aruco_corners
-        # return 
-        
-        arena = {"4": 0, "8": 0, "10": 0, "12":0}
 
-        # taking the 1st detected aruco marker
         try:
-            length_ids = len(ids)
+            # raise exception if any one aruco disappears
             if(length_ids != 5):
-                return
+                raise Exception("5 Arucos not visible!")
 
+            # creating arena and bot locations
             for i in range(0, length_ids):
                 if(ids[i][0] == 15):
                     aruco_bot = corners[i][0]
@@ -208,33 +136,34 @@ class Feedback():
                     arena["12"] = self.centroid(corners[i][0])
 
         except Exception as e:
-            rospy.logerr(e)
+            # rospy.logerr(e)
             return
-        
 
-        print(arena)
-        ideal_arena = np.array([[0, 0], [500, 0], [500, 500], [0, 500]])
-        
-        print(
-        	self.create_vector(arena["4"],arena["8"]),
-        	self.create_vector(arena["8"],arena["10"]), 
-        	self.create_vector(arena["10"],arena["12"]), 
-        	self.create_vector(arena["12"],arena["4"])
-        	)
-        print()
-        
-        
         # calculating x, y by taking cetroid of the quadilateral
-        x, y = self.centroid(aruco_bot)
+        bot_centroid = np.array(self.centroid(aruco_bot))
 
         # taking 2 points for determining line vector(box axis)
-        v1 = self.create_vector(np.array([x, y]), aruco_bot[0]/2 + aruco_bot[1]/2) 	#bot axis
-        v2 = np.array([0, -1])										#camera axis
+        v1 = self.create_vector(bot_centroid, aruco_bot[0]/2 + aruco_bot[1]/2) 	#bot axis
+        # v2 = np.array([0, -1])										#camera axis
+        v2 = self.create_vector(arena["12"], arena["4"])
         # angle between bot axis and camera axis vectors will determine bot orietation
         theta = self.angle_between(v1, v2)
         # print(x, y, theta)
-            
-        self.publish(x, y, theta)
+        
+        # scaling centroid of bot wrt camera frane and arena frame
+        # currently taking aruco id "4" as reference
+        bot_centroid = self.create_vector(arena["4"], bot_centroid)
+        side_len_x = self.side_length(arena["4"], arena["8"])
+        bot_centroid[0] = bot_centroid[0]*500/side_len_x
+        side_len_y = self.side_length(arena["4"], arena["12"])
+        bot_centroid[1] = bot_centroid[1]*500/side_len_y
+        
+        # print(bot_centroid[0], bot_centroid[1], theta)
+        self.publish(bot_centroid[0], bot_centroid[1], theta)
+        
+        self.bot_centroid[0] = round(bot_centroid[0], 3)
+        self.bot_centroid[1] = round(bot_centroid[1], 3)
+        self.theta = round(theta, 5)
 
         # adding delay
         rospy.sleep(0.001)
