@@ -73,7 +73,7 @@ class Controller():
         self.goal_index = 0					# For travercing the setpoints
 
         # variables for P controller
-        self.const_vel = [0.006, 0.63]			# [kp_xy, kp_w]
+        self.const_vel = [0.0065, 0.50]			# [kp_xy, kp_w]
         self.const_force = [2.1*200.0, 4*0.002, 4*0.00]	# [kp, kd, ki]
         self.err_prev = { 'front':0, 'left':0, 'right':0 }
         self.err_sum = [0,0,0]
@@ -187,7 +187,7 @@ class Controller():
             if(self.goal_index < len(self.x_goals)-1):
                 self.goal_index += 1
                 rospy.sleep(0.1)
-                rospy.loginfo("Goal reached " + str(self.goal_index))
+                rospy.loginfo("Goal reached " + str(self.goal_index)+": "+str(self.goal_position))
                 self.goal_position = [
                     self.x_goals[self.goal_index], 
                     self.y_goals[self.goal_index], 

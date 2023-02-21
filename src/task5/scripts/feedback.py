@@ -152,11 +152,11 @@ class Feedback():
         
         # scaling centroid of bot wrt camera frane and arena frame
         # currently taking aruco id "4" as reference
-        bot_centroid = self.create_vector(arena["4"], bot_centroid)
-        side_len_x = self.side_length(arena["4"], arena["8"])
-        bot_centroid[0] = bot_centroid[0]*500/side_len_x
-        side_len_y = self.side_length(arena["4"], arena["12"])
-        bot_centroid[1] = bot_centroid[1]*500/side_len_y
+        # bot_centroid = self.create_vector(arena["4"], bot_centroid)
+        # side_len_x = self.side_length(arena["4"], arena["8"])
+        # bot_centroid[0] = bot_centroid[0]*500/side_len_x
+        # side_len_y = self.side_length(arena["4"], arena["12"])
+        # bot_centroid[1] = bot_centroid[1]*500/side_len_y
         
         # print(bot_centroid[0], bot_centroid[1], theta)
         self.publish(bot_centroid[0], bot_centroid[1], theta)
