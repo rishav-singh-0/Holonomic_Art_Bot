@@ -153,3 +153,33 @@ Seems like S2 switch was wrongly toggled and not ESP32 connected to hotspor and
 works fine. Tested sending data stream and printing it. Now whats remaning is
 connect ros topic with this out-stream.
 
+## 20th Feb 2023
+Data transfer between laptop and ESP32 seems very slow, around 1 to 1.2
+seconds, and i am using this to constantly send each wheel velocity based on
+realtime location of bot, so i needed to increase the speed somehow. After
+hours of googling and trial and error settions, i figured out that i forgot to
+send new line character '\n' to esp which it is expecting at end of each chunk
+of string(Such silly mistakes, i bet even chatgpt couldnt detect it). Now
+latency is around 7 to 200ms.
+
+## 21st Feb 2023
+Recorded a video of bot moving to the given setpoints(currently hardcoded in
+controller.py) but not following straight trajectory, which should not be
+happening.
+
+While tuning bot for stability, it stopped in the middle of recording. I
+thought battery charge is down, and put the battery to charge, but later on
+came to know that its not cahrging and none of the cells are detected detected.
+So decided to cut open and check each cell, and concluded that 1 of the 3 cells
+stopped working and as they are in series, so other 2 cant be charged.
+![battery opening](battery_opening.gif)
+
+## 22nd Feb 2023
+Searched for 3 cell LiPo battery at "Lovely Electronics" but the quality was
+not satisfactory, so ordered Orange one from
+[robu.in](https://robu.in/product/orange-11-1v-1500mah-3s-40c-lipo-battery-pack-xt60-connector/).
+Also ordered M3 screws(finally).
+
+Got an idea to give fake setpoints(tragectory calculation) to bot for
+travelling larger distance. Insperaion from vitarana drone where there was
+constain of 25 meters because of lazor sensor. Here it is "Affine Space"
