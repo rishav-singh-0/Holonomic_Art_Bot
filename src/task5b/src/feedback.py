@@ -51,8 +51,8 @@ class Feedback():
         #################### ROS Node ############################
 
         rospy.init_node('aruco_feedback_node')
-        # rospy.Subscriber('overhead_cam/image_raw', Image, self.callback)
-        rospy.Subscriber('usb_cam/image_raw', Image, self.callback)
+        rospy.Subscriber('overhead_cam/image_raw', Image, self.callback)
+        # rospy.Subscriber('usb_cam/image_raw', Image, self.callback)
         # rospy.Subscriber('usb_cam/image_rect', Image, self.callback)
         self.aruco_publisher = rospy.Publisher('detected_aruco', Pose2D, queue_size=10)
 
@@ -118,22 +118,26 @@ class Feedback():
         cv2.waitKey(10)  # adding delay
 
         try:
-            # raise exception if any one aruco disappears
-            if(length_ids != 5):
-                raise Exception("5 Arucos not visible!")
+            # # raise exception if any one aruco disappears
+            # if(length_ids != 5):
+            #     raise Exception("5 Arucos not visible!")
 
-            # creating arena and bot locations
-            for i in range(0, length_ids):
-                if(ids[i][0] == 15):
-                    aruco_bot = corners[i][0]
-                elif(ids[i][0] == 4):
-                    arena["4"] = self.centroid(corners[i][0])
-                elif(ids[i][0] == 8):
-                    arena["8"] = self.centroid(corners[i][0])
-                elif(ids[i][0] == 10):
-                    arena["10"] = self.centroid(corners[i][0])
-                elif(ids[i][0] == 12):
-                    arena["12"] = self.centroid(corners[i][0])
+            # # creating arena and bot locations
+            # for i in range(0, length_ids):
+            #     if(ids[i][0] == 15):
+            #         aruco_bot = corners[i][0]
+            #     elif(ids[i][0] == 4):
+            #         arena["4"] = self.centroid(corners[i][0])
+            #     elif(ids[i][0] == 8):
+            #         arena["8"] = self.centroid(corners[i][0])
+            #     elif(ids[i][0] == 10):
+            #         arena["10"] = self.centroid(corners[i][0])
+            #     elif(ids[i][0] == 12):
+            #         arena["12"] = self.centroid(corners[i][0])
+            
+            # if only bot aruco is visible
+            if(ids[0][0] == 15):
+                aruco_bot = corners[0][0]
 
         except Exception as e:
             # rospy.logerr(e)
