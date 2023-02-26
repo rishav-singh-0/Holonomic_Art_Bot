@@ -56,3 +56,6 @@ CATKIN_IGNORE
 Arduino_as_ISP_eYFi-Mega
 usb_cam
 POST
+
+# auto-eval scripts
+eval*
