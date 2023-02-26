@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+
+'''
+*****************************************************************************************
+*
+*        		===============================================
+*           		    HolA Bot (HB) Theme (eYRC 2022-23)
+*        		===============================================
+*
+*  This script should be used to implement Task 0 of HolA Bot (HB) Theme (eYRC 2022-23).
+*
+*  This software is made available on an "AS IS WHERE IS BASIS".
+*  Licensee/end user indemnifies and will keep e-Yantra indemnified from
+*  any and all claim(s) that emanate from the use of the Software or
+*  breach of the terms of this agreement.
+*
+*****************************************************************************************
+'''
+
+# Team ID:		[ Team-ID ]
+# Author List:		Rishav Singh
+# Filename:		path_planner.py
+# Functions:
+#			[ Comma separated list of functions in this file ]
+# Nodes:		Add your publishing and subscribing node
+
+
+################### IMPORT MODULES #######################
+
+import rospy
+import signal		# To handle Signals by OS/user
+import sys		# To handle Signals by OS/user
+import numpy as np
+
+from geometry_msgs.msg import PoseArray	# Message type used for receiving goals
+from geometry_msgs.msg import Pose2D		# Message type used for receiving feedback
+from geometry_msgs.msg import Twist         # velocity
+
+import time
+import math		# If you find it useful
+from math import pi as PI
+
+from tf.transformations import euler_from_quaternion	# Convert angles
+
+
+class PathPlanner():
+
+    def __init__(self):
+        ################## GLOBAL VARIABLES ######################
+
+        self.x_goals = [250, 350, 150, 150, 350, 250]
+        self.y_goals = [250, 300, 300, 150, 150, 250]
+        self.theta_goals = [0, PI/4, 3*PI/4, -3*PI/4, -PI/4, 0]
+
+        # position as [x, y, theta]
+        self.hola_position = [0, 0, 0]              # current position
+        self.goal_position = [None, None, None]     # current goals
+
+        self.goal_index = 0					# For travercing the setpoints
+
+        # variables for P controller
+        self.const_vel = [0.0065, 0.50]			# [kp_xy, kp_w]
+
+        self.error_global = [0, 0, 0]
+        self.error_local = {'x':0, 'y':0}       # only needs [x, y]
+        self.err_sum = [0, 0, 0]
+
+        # Variables for directional speed
+        self.vel = Twist()
+        self.vel.linear.x = 0.0
+        self.vel.linear.y = 0.0
+        self.vel.angular.z = 0.0
+
+        #################### ROS Node ############################
+
+        rospy.init_node('path_planner_node')
+
+        self.rate = rospy.Rate(200)
+
+        self.goal_publisher = rospy.Publisher('/detected_aruco', Twist, queue_size=10)
+        # rospy.Subscriber('task2_goals',PoseArray,self.task2_goals_Cb)
+        
+    ##################### FUNCTION DEFINITIONS #######################
+
+    def task2_goals_Cb(self, msg):
+        self.x_goals.clear()
+        self.y_goals.clear()
+        self.theta_goals.clear()
+
+        for waypoint_pose in msg.poses:
+            self.x_goals.append(waypoint_pose.position.x)
+            self.y_goals.append(waypoint_pose.position.y)
+
+            orientation_q = waypoint_pose.orientation
+            orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+            theta_goal = euler_from_quaternion (orientation_list)[2]
+            self.theta_goals.append(theta_goal)
+
+    def aruco_feedback_Cb(self, msg):
+        self.hola_position[0] = msg.x
+        self.hola_position[1] = msg.y
+        self.hola_position[2] = msg.theta
+    
+    def is_ready(self):
+        condition = self.x_goals == [] or \
+                    self.x_goals == None or \
+                    self.hola_position[0] == None
+        # print(self.x_goals,self.hola_position)
+        return condition
+    
+    def threshold_box(self):
+        condition = abs(self.error_global[0]) < 4 and \
+                    abs(self.error_global[1]) < 4 and \
+                    abs(math.degrees(self.error_global[2])) <= 5
+        return condition
+
+    def next_goal(self):
+        condition = self.threshold_box()
+        if(condition):
+            if(self.goal_index < len(self.x_goals)-1):
+                self.goal_index += 1
+                rospy.sleep(0.1)
+                rospy.loginfo("Goal reached " + str(self.goal_index)+": "+str(self.goal_position))
+                self.goal_position = [
+                    self.x_goals[self.goal_index], 
+                    self.y_goals[self.goal_index], 
+                    self.theta_goals[self.goal_index]
+                ]
+
+    def safety_check(self, vel):
+        constain = 2
+        if(vel < -constain): return -constain
+        if(vel > constain): return constain
+        return vel
+
+    def position_controller(self):
+        '''
+        Calculate the velocity required to reach desired position goal
+        '''
+
+        for i in range(3):
+            self.error_global[i] = self.goal_position[i] - self.hola_position[i]
+
+        # Calculating error in body frame
+        w = self.hola_position[2]
+        self.error_local['x'] = self.error_global[0]*math.cos(w) - self.error_global[1]*math.sin(w)
+        self.error_local['y'] = -self.error_global[0]*math.sin(w) - self.error_global[1]*math.cos(w)
+
+
+        # P controller for velocity
+        self.vel.angular.z = self.const_vel[1] * self.error_global[2]	# angular velocity
+        self.vel.linear.x = self.const_vel[0] * self.error_local['x']
+        self.vel.linear.x = self.const_vel[0] * self.error_local['y']
+
+        # Safety Check to ensure the velocities are within a range.
+        self.vel.linear.x = self.safety_check(self.vel.linear.x)
+        self.vel.linear.y = self.safety_check(self.vel.linear.y)
+        
+    def main(self):
+
+        while not rospy.is_shutdown():
+
+            self.rate.sleep()
+            
+            # checking if the subscibed variables are on position
+            if self.is_ready():
+                print("Waiting!")
+                continue
+            
+            # removing error while going to next test case
+            try:
+                self.goal_position = [
+                    self.x_goals[self.goal_index], 
+                    self.y_goals[self.goal_index], 
+                    self.theta_goals[self.goal_index]
+                ]
+            except IndexError as e:
+                rospy.logerr(e)
+                continue
+
+            self.position_controller()
+            # print(self.hola_position)
+
+            self.goal_publisher.publish(self.vel)
+            self.next_goal()
+
+
+if __name__ == "__main__":
+    try:
+        control = PathPlanner()
+        control.main()
+    except rospy.ROSInterruptException:
+        pass
+

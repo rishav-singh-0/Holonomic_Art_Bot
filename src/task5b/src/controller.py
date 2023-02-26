@@ -18,8 +18,8 @@
 '''
 
 # Team ID:		[ Team-ID ]
-# Author List:		[ Names of team members worked on this file separated by Comma: Name1, Name2, ... ]
-# Filename:		feedback.py
+# Author List:		Rishav Singh, Kashyap Joshi
+# Filename:		controller.py
 # Functions:
 #			[ Comma separated list of functions in this file ]
 # Nodes:		Add your publishing and subscribing node
@@ -37,6 +37,7 @@ from geometry_msgs.msg import Wrench		# Message type used for publishing force v
 from geometry_msgs.msg import PoseArray	# Message type used for receiving goals
 from geometry_msgs.msg import Pose2D		# Message type used for receiving feedback
 from std_srvs.srv import Empty			# for shutdown hook
+from geometry_msgs.msg import Twist         # velocity
 
 import time
 import math		# If you find it useful
@@ -48,35 +49,15 @@ class Controller():
     def __init__(self):
         ################## GLOBAL VARIABLES ######################
 
-        # HomePose = [250, 250, 0]:
-        # i) [350,300, pi/4]
-        # ii) [150,300, 3pi/4]
-        # iii) [150,150, -3pi/4]
-        # iv) [350,150, -pi/4]
-        PI = math.pi
-        self.x_goals = [250, 350, 150, 150, 350, 250]
-        self.y_goals = [250, 300, 300, 150, 150, 250]
-        self.theta_goals = [0, PI/4, 3*PI/4, -3*PI/4, -PI/4, 0]
-
         # force vectors initialization
         self.right_wheel = Wrench()
         self.left_wheel = Wrench()
         self.front_wheel = Wrench()
 
-        # position as [x, y, theta]
-        self.hola_position = [0, 0, 0]
-        self.goal_position = [None, None, None]
-
-        self.error_global = [0, 0, 0]
-        self.error_local = {'x':0, 'y':0}       # only needs [x, y]
-
-        self.goal_index = 0					# For travercing the setpoints
-
         # variables for P controller
-        self.const_vel = [0.0065, 0.50]			# [kp_xy, kp_w]
         self.const_force = [2.1*200.0, 4*0.002, 4*0.00]	# [kp, kd, ki]
         self.err_prev = { 'front':0, 'left':0, 'right':0 }
-        self.err_sum = [0,0,0]
+        self.err_sum = [0, 0, 0]
 
         # Variables for wheel force
         self.wheel_force = { 'front': None, 'left': None, 'right': None }
@@ -94,6 +75,10 @@ class Controller():
         ])
         self.transform_matrix = np.linalg.inv(self.tr_mat)
 
+        # socket connection
+        self.connection =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket_conn = 0
+
         #################### ROS Node ############################
 
         rospy.init_node('controller_node')
@@ -101,52 +86,23 @@ class Controller():
         signal.signal(signal.SIGINT, self.signal_handler)
         self.rate = rospy.Rate(200)
 
-        # socket connection
-        self.connection =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket_conn = 0
-
         # self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         self.right_wheel_pub = rospy.Publisher('/right_wheel_force', Wrench, queue_size=10)
         self.front_wheel_pub = rospy.Publisher('/front_wheel_force', Wrench, queue_size=10)
         self.left_wheel_pub = rospy.Publisher('/left_wheel_force', Wrench, queue_size=10)
 
-        rospy.Subscriber('detected_aruco',Pose2D,self.aruco_feedback_Cb)
-        # rospy.Subscriber('task2_goals',PoseArray,self.task2_goals_Cb)
+        rospy.Subscriber('path_planner_node', Twist, self.path_goals_callback)
         
     ##################### FUNCTION DEFINITIONS #######################
 
-    def cleanup(self):
-        force_zero = Wrench()
-        force_zero.force.x = force_zero.force.y = force_zero.force.z = 0
-        self.right_wheel_pub.publish(force_zero)
-        self.front_wheel_pub.publish(force_zero)
-        self.left_wheel_pub.publish(force_zero)
-        # self.reset_world()
-    
-    def task2_goals_Cb(self, msg):
-        self.x_goals.clear()
-        self.y_goals.clear()
-        self.theta_goals.clear()
+    def path_goals_callback(self, msg):
+        self.vel['x'] = msg.linear.x
+        self.vel['y'] = msg.linear.y
+        self.vel['w'] = msg.angular.z
 
-        for waypoint_pose in msg.poses:
-            self.x_goals.append(waypoint_pose.position.x)
-            self.y_goals.append(waypoint_pose.position.y)
-
-            orientation_q = waypoint_pose.orientation
-            orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
-            theta_goal = euler_from_quaternion (orientation_list)[2]
-            self.theta_goals.append(theta_goal)
-
-    def aruco_feedback_Cb(self, msg):
-        self.hola_position[0] = msg.x
-        self.hola_position[1] = msg.y
-        self.hola_position[2] = msg.theta
-    
     def is_ready(self):
-        condition = self.x_goals == [] or \
-                    self.x_goals == None or \
-                    self.hola_position[0] == None
-        # print(self.x_goals,self.hola_position)
+        condition = self.vel['x'] == None or \
+                    self.vel['y'] == None
         return condition
     
     def connect_socket(self):
@@ -160,45 +116,32 @@ class Controller():
         rospy.loginfo(f"Connected by {addr}")
     
     def socket_send_data(self):
-        data = list(self.wheel_force.values())
+        # data = list(self.wheel_force.values())
         data = str([round(i, 2) for i in self.wheel_force.values()]) + '\n'
         rec_data = self.socket_conn.recv(1024)
-        # rospy.loginfo(data)
-        # rospy.loginfo(rec_data)
+        rospy.loginfo(data)
+        rospy.loginfo(rec_data)
         self.socket_conn.sendall(str.encode(data))
         rospy.sleep(0.1)
 
     def signal_handler(self, sig, frame):
         print('Clean-up !')
+        
+        # closing socket connection
         self.connection.close()
-        self.cleanup()
+        
+        # publishing 0 force to each wheels
+        force_zero = Wrench()
+        force_zero.force.x = force_zero.force.y = force_zero.force.z = 0
+        self.right_wheel_pub.publish(force_zero)
+        self.front_wheel_pub.publish(force_zero)
+        self.left_wheel_pub.publish(force_zero)
+        
+        # resetting gazebo world
+        # self.reset_world()
+
         print("cleanup done")
         sys.exit(0)
-
-    def threshold_box(self):
-        condition = abs(self.error_global[0]) < 4 and \
-                    abs(self.error_global[1]) < 4 and \
-                    abs(math.degrees(self.error_global[2])) <= 5
-        return condition
-
-    def next_goal(self):
-        condition = self.threshold_box()
-        if(condition):
-            if(self.goal_index < len(self.x_goals)-1):
-                self.goal_index += 1
-                rospy.sleep(0.1)
-                rospy.loginfo("Goal reached " + str(self.goal_index)+": "+str(self.goal_position))
-                self.goal_position = [
-                    self.x_goals[self.goal_index], 
-                    self.y_goals[self.goal_index], 
-                    self.theta_goals[self.goal_index]
-                ]
-
-    def safety_check(self, vel):
-        constain = 2
-        if(vel < -constain): return -constain
-        if(vel > constain): return constain
-        return vel
 
     def inverse_kinematics(self):
         '''
@@ -219,67 +162,35 @@ class Controller():
         self.err_prev = self.wheel_force
         # self.err_sum = [self.sum[0] + self.wheel_force['front'], self.sum[1] + self.wheel_force['left'], self.sum[2] + self.wheel_force['right']]
 
-    def position_controller(self):
-        '''
-        Calculate the velocity required to reach desired position goal
-        '''
-
-        for i in range(3):
-            self.error_global[i] = self.goal_position[i] - self.hola_position[i]
-
-        # Calculating error in body frame
-        w = self.hola_position[2]
-        self.error_local['x'] = self.error_global[0]*math.cos(w) - self.error_global[1]*math.sin(w)
-        self.error_local['y'] = -self.error_global[0]*math.sin(w) - self.error_global[1]*math.cos(w)
-
-
-        # P controller for velocity
-        self.vel['w'] = self.const_vel[1] * self.error_global[2]	# angular velocity
-        for i in ['x', 'y']:
-            self.vel[i] = self.const_vel[0] * self.error_local[i]
-
-            # Safety Check to ensure the velocities are within a range.
-            self.vel[i] = self.safety_check(self.vel[i])
         
     def publish_force(self):
         self.front_w.force.x = self.wheel_force['front']
         self.left_w.force.x = self.wheel_force['left']
         self.right_w.force.x = self.wheel_force['right']
 
-        self.right_wheel_pub.publish(self.right_w)
         self.front_wheel_pub.publish(self.front_w)
         self.left_wheel_pub.publish(self.left_w)
+        self.right_wheel_pub.publish(self.right_w)
 
     def main(self):
 
         while not rospy.is_shutdown():
+
+            self.rate.sleep()
             
             # checking if the subscibed variables are on position
             if self.is_ready():
                 print("Waiting!")
-                self.rate.sleep()
                 continue
             
-            # removing error while going to next test case
-            try:
-                self.goal_position = [
-                    self.x_goals[self.goal_index], 
-                    self.y_goals[self.goal_index], 
-                    self.theta_goals[self.goal_index]
-                ]
-            except IndexError as e:
-                rospy.logerr(e)
-                self.rate.sleep()
-                continue
-
-            self.position_controller()
+            # calculate force of each wheel according to given velocities
             self.inverse_kinematics()
-            # print(self.hola_position)
 
+            # publish forces
             self.publish_force()
+
+            # send the speeds/forces to esp32
             self.socket_send_data()
-            self.rate.sleep()
-            self.next_goal()
 
 
 if __name__ == "__main__":
