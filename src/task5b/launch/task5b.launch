@@ -14,5 +14,6 @@ roslaunch usb_cam_stream_publisher.launch video_device:=/dev/video0 image_width:
     <param name="camera_info_url" value="file://$(find task5b)/../camera_info/head_camera.yaml"/> 
   </node>
   <node name="localization" pkg="task5b" type="feedback.py" output="screen" />
+  <node name="path_planner" pkg="task5b" type="path_planner.py" output="screen" />
   <node name="hardware_controller" pkg="task5b" type="controller.py" output="screen" />
 </launch>
