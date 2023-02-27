@@ -2,23 +2,12 @@
 
 '''
 *****************************************************************************************
-*
-*        		===============================================
-*           		    HolA Bot (HB) Theme (eYRC 2022-23)
-*        		===============================================
-*
-*  This script should be used to implement Task 0 of HolA Bot (HB) Theme (eYRC 2022-23).
-*
-*  This software is made available on an "AS IS WHERE IS BASIS".
-*  Licensee/end user indemnifies and will keep e-Yantra indemnified from
-*  any and all claim(s) that emanate from the use of the Software or
-*  breach of the terms of this agreement.
-*
+Takes raw feed from camera and calculates the localization(x, y, theta) of bot with 
+respect to arena
 *****************************************************************************************
 '''
 
-# Team ID:		[ Team-ID ]
-# Author List:		[ Names of team members worked on this file separated by Comma: Name1, Name2, ... ]
+# Author List:	Rishav Singh
 # Filename:		feedback.py
 # Functions:
 #			[ Comma separated list of functions in this file ]

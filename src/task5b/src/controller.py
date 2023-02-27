@@ -2,23 +2,12 @@
 
 '''
 *****************************************************************************************
-*
-*        		===============================================
-*           		    HolA Bot (HB) Theme (eYRC 2022-23)
-*        		===============================================
-*
-*  This script should be used to implement Task 0 of HolA Bot (HB) Theme (eYRC 2022-23).
-*
-*  This software is made available on an "AS IS WHERE IS BASIS".
-*  Licensee/end user indemnifies and will keep e-Yantra indemnified from
-*  any and all claim(s) that emanate from the use of the Software or
-*  breach of the terms of this agreement.
-*
+Takes setpoints from path planner and calculates force required for each wheel to reach 
+this setpoint
 *****************************************************************************************
 '''
 
-# Team ID:		[ Team-ID ]
-# Author List:		Rishav Singh, Kashyap Joshi
+# Author List:	Rishav Singh, Kashyap Joshi
 # Filename:		controller.py
 # Functions:
 #			[ Comma separated list of functions in this file ]

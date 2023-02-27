@@ -2,23 +2,12 @@
 
 '''
 *****************************************************************************************
-*
-*        		===============================================
-*           		    HolA Bot (HB) Theme (eYRC 2022-23)
-*        		===============================================
-*
-*  This script should be used to implement Task 0 of HolA Bot (HB) Theme (eYRC 2022-23).
-*
-*  This software is made available on an "AS IS WHERE IS BASIS".
-*  Licensee/end user indemnifies and will keep e-Yantra indemnified from
-*  any and all claim(s) that emanate from the use of the Software or
-*  breach of the terms of this agreement.
-*
+Path Planner decides path(list of goals) for bot to follow.
+Also performs the task of position controller.
 *****************************************************************************************
 '''
 
-# Team ID:		[ Team-ID ]
-# Author List:		Rishav Singh
+# Author List:  Rishav Singh
 # Filename:		path_planner.py
 # Functions:
 #			[ Comma separated list of functions in this file ]
@@ -45,9 +34,9 @@ class PathPlanner():
     def __init__(self):
         ################## GLOBAL VARIABLES ######################
 
-        self.x_goals = [250, 350, 150, 150, 350, 250]
-        self.y_goals = [250, 300, 300, 150, 150, 250]
-        self.theta_goals = [0, PI/4, 3*PI/4, -3*PI/4, -PI/4, 0]
+        self.x_goals = []
+        self.y_goals = []
+        self.theta_goals = []
 
         # position as [x, y, theta]
         self.hola_position = [0, 0, 0]              # current position
