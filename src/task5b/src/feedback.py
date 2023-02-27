@@ -51,9 +51,8 @@ class Feedback():
         #################### ROS Node ############################
 
         rospy.init_node('aruco_feedback_node')
-        rospy.Subscriber('overhead_cam/image_raw', Image, self.callback)
-        # rospy.Subscriber('usb_cam/image_raw', Image, self.callback)
-        # rospy.Subscriber('usb_cam/image_rect', Image, self.callback)
+        # rospy.Subscriber('overhead_cam/image_raw', Image, self.callback)
+        rospy.Subscriber('usb_cam/image_raw', Image, self.callback)
         self.aruco_publisher = rospy.Publisher('detected_aruco', Pose2D, queue_size=10)
 
     ##################### FUNCTION DEFINITIONS #######################
@@ -148,8 +147,8 @@ class Feedback():
 
         # taking 2 points for determining line vector(box axis)
         v1 = self.create_vector(bot_centroid, aruco_bot[0]/2 + aruco_bot[1]/2) 	#bot axis
-        # v2 = np.array([0, -1])										#camera axis
-        v2 = self.create_vector(arena["12"], arena["4"])
+        v2 = np.array([0, -1])										#camera axis
+        # v2 = self.create_vector(arena["12"], arena["4"])
         # angle between bot axis and camera axis vectors will determine bot orietation
         theta = self.angle_between(v1, v2)
         # print(x, y, theta)
