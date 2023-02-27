@@ -28,11 +28,8 @@
 ################### IMPORT MODULES #######################
 
 import rospy
-import signal		# To handle Signals by OS/user
-import sys		# To handle Signals by OS/user
 import numpy as np
 
-from geometry_msgs.msg import PoseArray	# Message type used for receiving goals
 from geometry_msgs.msg import Pose2D		# Message type used for receiving feedback
 from geometry_msgs.msg import Twist         # velocity
 
@@ -77,29 +74,17 @@ class PathPlanner():
 
         self.rate = rospy.Rate(200)
 
-        self.goal_publisher = rospy.Publisher('/detected_aruco', Twist, queue_size=10)
-        # rospy.Subscriber('task2_goals',PoseArray,self.task2_goals_Cb)
+        self.goal_publisher = rospy.Publisher('path_plan', Twist, queue_size=10)
+
+        rospy.Subscriber('detected_aruco', Pose2D, self.aruco_feedback_Cb)
         
     ##################### FUNCTION DEFINITIONS #######################
-
-    def task2_goals_Cb(self, msg):
-        self.x_goals.clear()
-        self.y_goals.clear()
-        self.theta_goals.clear()
-
-        for waypoint_pose in msg.poses:
-            self.x_goals.append(waypoint_pose.position.x)
-            self.y_goals.append(waypoint_pose.position.y)
-
-            orientation_q = waypoint_pose.orientation
-            orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
-            theta_goal = euler_from_quaternion (orientation_list)[2]
-            self.theta_goals.append(theta_goal)
 
     def aruco_feedback_Cb(self, msg):
         self.hola_position[0] = msg.x
         self.hola_position[1] = msg.y
         self.hola_position[2] = msg.theta
+        # print(self.hola_position)
     
     def is_ready(self):
         condition = self.x_goals == [] or \
@@ -116,6 +101,7 @@ class PathPlanner():
 
     def next_goal(self):
         condition = self.threshold_box()
+        # print(self.hola_position)
         if(condition):
             if(self.goal_index < len(self.x_goals)-1):
                 self.goal_index += 1
@@ -150,7 +136,7 @@ class PathPlanner():
         # P controller for velocity
         self.vel.angular.z = self.const_vel[1] * self.error_global[2]	# angular velocity
         self.vel.linear.x = self.const_vel[0] * self.error_local['x']
-        self.vel.linear.x = self.const_vel[0] * self.error_local['y']
+        self.vel.linear.y = self.const_vel[0] * self.error_local['y']
 
         # Safety Check to ensure the velocities are within a range.
         self.vel.linear.x = self.safety_check(self.vel.linear.x)
@@ -164,7 +150,7 @@ class PathPlanner():
             
             # checking if the subscibed variables are on position
             if self.is_ready():
-                print("Waiting!")
+                print("Waiting in path planner!")
                 continue
             
             # removing error while going to next test case
@@ -181,6 +167,7 @@ class PathPlanner():
             self.position_controller()
             # print(self.hola_position)
 
+            # print(self.vel)
             self.goal_publisher.publish(self.vel)
             self.next_goal()
 

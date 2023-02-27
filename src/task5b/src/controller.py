@@ -91,7 +91,7 @@ class Controller():
         self.front_wheel_pub = rospy.Publisher('/front_wheel_force', Wrench, queue_size=10)
         self.left_wheel_pub = rospy.Publisher('/left_wheel_force', Wrench, queue_size=10)
 
-        rospy.Subscriber('path_planner_node', Twist, self.path_goals_callback)
+        rospy.Subscriber('path_plan', Twist, self.path_goals_callback)
         
     ##################### FUNCTION DEFINITIONS #######################
 
@@ -119,8 +119,8 @@ class Controller():
         # data = list(self.wheel_force.values())
         data = str([round(i, 2) for i in self.wheel_force.values()]) + '\n'
         rec_data = self.socket_conn.recv(1024)
-        rospy.loginfo(data)
-        rospy.loginfo(rec_data)
+        # rospy.loginfo(data)
+        # rospy.loginfo(rec_data)
         self.socket_conn.sendall(str.encode(data))
         rospy.sleep(0.1)
 
