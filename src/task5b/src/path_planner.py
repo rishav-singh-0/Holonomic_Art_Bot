@@ -43,6 +43,8 @@ class PathPlanner():
         self.goal_position = [None, None, None]     # current goals
 
         self.goal_index = 0					# For travercing the setpoints
+        
+        self.max_setpoints = 100            # max setpoints to be trasversed by bot
 
         # variables for P controller
         self.const_vel = [0.0065, 0.50]			# [kp_xy, kp_w]
@@ -76,7 +78,7 @@ class PathPlanner():
         # print(self.hola_position)
     
     def is_ready(self):
-        condition = self.x_goals == [] or \
+        condition = self.x_goals.any() or \
                     self.x_goals == None or \
                     self.hola_position[0] == None
         # print(self.x_goals,self.hola_position)
@@ -131,6 +133,24 @@ class PathPlanner():
         self.vel.linear.x = self.safety_check(self.vel.linear.x)
         self.vel.linear.y = self.safety_check(self.vel.linear.y)
         
+    def image_mode(self):
+        self.x_goals = []
+        self.y_goals = []
+        self.theta_goals = []
+
+    def function_mode(self):
+        
+        # take few points from 0 to 2*PI and generate setpoints in x, y and theta arrays
+        t = np.linspace(0, 2*PI, num=self.max_setpoints)       
+        x = lambda t: 400*math.cos(t)
+        y = lambda t: 200*math.sin(2*t)
+        theta = lambda t: (PI/4)*math.sin(t) # you may need to add a phase shift
+        
+        self.x_goals = np.array([x(i) for i in t])
+        self.y_goals = np.array([y(i) for i in t])
+        self.theta_goals = np.array([theta(i) for i in t])
+
+
     def main(self):
 
         while not rospy.is_shutdown():
@@ -164,6 +184,7 @@ class PathPlanner():
 if __name__ == "__main__":
     try:
         control = PathPlanner()
+        control.function_mode()
         control.main()
     except rospy.ROSInterruptException:
         pass
