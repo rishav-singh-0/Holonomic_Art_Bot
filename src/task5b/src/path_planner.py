@@ -78,8 +78,7 @@ class PathPlanner():
         # print(self.hola_position)
     
     def is_ready(self):
-        condition = self.x_goals.any() or \
-                    self.x_goals == None or \
+        condition = self.x_goals.any() == False or \
                     self.hola_position[0] == None
         # print(self.x_goals,self.hola_position)
         return condition
@@ -104,11 +103,15 @@ class PathPlanner():
                     self.theta_goals[self.goal_index]
                 ]
 
-    def safety_check(self, vel):
-        constain = 2
-        if(vel < -constain): return -constain
-        if(vel > constain): return constain
-        return vel
+    def safety_check(self):
+        '''
+        Limit x, y velocities while maintaining the ratio between them to maintain trajectory
+        '''
+        max_velocity = 2
+        ratio = 10
+        if(abs(self.vel.linear.x) > max_velocity and abs(self.vel.linear.y) > max_velocity):
+            self.vel.linear.x /= ratio
+            self.vel.linear.y /= ratio
 
     def position_controller(self):
         '''
@@ -123,15 +126,13 @@ class PathPlanner():
         self.error_local['x'] = self.error_global[0]*math.cos(w) - self.error_global[1]*math.sin(w)
         self.error_local['y'] = -self.error_global[0]*math.sin(w) - self.error_global[1]*math.cos(w)
 
-
         # P controller for velocity
         self.vel.angular.z = self.const_vel[1] * self.error_global[2]	# angular velocity
         self.vel.linear.x = self.const_vel[0] * self.error_local['x']
         self.vel.linear.y = self.const_vel[0] * self.error_local['y']
 
         # Safety Check to ensure the velocities are within a range.
-        self.vel.linear.x = self.safety_check(self.vel.linear.x)
-        self.vel.linear.y = self.safety_check(self.vel.linear.y)
+        self.safety_check()
         
     def image_mode(self):
         self.x_goals = []
