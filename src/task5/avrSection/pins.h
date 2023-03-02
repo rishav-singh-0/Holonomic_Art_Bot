@@ -11,6 +11,8 @@
 
 #define MICROSTEP_2 44              //5C
 
+#define SERVO 12                    //1B 
+
 #define RED 6
 #define GREEN 8
 #define BLUE 7
