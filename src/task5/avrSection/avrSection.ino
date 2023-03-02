@@ -1,4 +1,6 @@
 #include <AccelStepper.h>
+#include <Servo.h>
+
 #include "pins.h"
 
 // Task 5
@@ -24,6 +26,10 @@ AccelStepper stepper_front(AccelStepper::DRIVER, FRONT_WHEEL_STEP, FRONT_WHEEL_D
 AccelStepper stepper_left(AccelStepper::DRIVER, LEFT_WHEEL_STEP, LEFT_WHEEL_DIR); 
 AccelStepper stepper_right(AccelStepper::DRIVER, RIGHT_WHEEL_STEP, RIGHT_WHEEL_DIR);
 
+Servo myservo;        // create servo object to control a servo
+int up_pos = 10;        // variable to store the servo position
+int down_pos = 95;        // variable to store the servo position
+
 
 void setup() {
   // put your setup code here, to run once:
@@ -43,12 +49,16 @@ void setup() {
   stepper_left.move(0.);
   stepper_right.move(0.);
 
+  myservo.attach(SERVO);                 //------------------------// attaches the servo on pin 9 to the servo object
+
+
   Serial.begin(115200);
 }
 
 void loop() {
 
   static bool ready = false;
+  float servo_pos;
 
   if(Serial.available()){                  //Check if any data is available on Serial
     rec_data = Serial.readStringUntil('\n');    //Read message on Serial until new char(\n) which indicates end of message. Received data is stored in msg
@@ -59,6 +69,7 @@ void loop() {
     wheel[FRONT].force = atof(strtok(buf+1, ","));
     wheel[LEFT].force = atof(strtok(NULL, ","));
     wheel[RIGHT].force = atof(strtok(NULL, ","));
+    servo_pos = atof(strtok(NULL, ","));
 
     // Serial.print(rec_data.c_str());
 
@@ -79,7 +90,7 @@ void loop() {
   static int count = 1;
   count--;
   if(count==0){
-    count = 1000000;
+    count = 1000000000;
     Serial.print("   ");
     Serial.print(stepper_front.speed());
     Serial.print("   ");
@@ -88,7 +99,11 @@ void loop() {
     Serial.print(stepper_right.speed());
     Serial.print("   ");
     Serial.print ("\n");
+
+    myservo.write(up_pos);           // tell servo to go to position in variable 'up_pos'
+    delay(1000);
   }
+  myservo.write(down_pos);           // tell servo to go to position in variable 'down_pos'
 
   // running the motors
   run_speed();
@@ -97,6 +112,7 @@ void loop() {
   if (!ready) {
     return;
   }
+  
   
   // validating conditions before moving
   // if (!wheel[FRONT].isRunning && !wheel[LEFT].isRunning && !wheel[RIGHT].isRunning){
