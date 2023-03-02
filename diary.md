@@ -183,3 +183,14 @@ Also ordered M3 screws(finally).
 Got an idea to give fake setpoints(tragectory calculation) to bot for
 travelling larger distance. Insperaion from vitarana drone where there was
 constain of 25 meters because of lazor sensor. Here it is "Affine Space"
+
+## 27th Feb 2023
+Made diffrent package for further work, also seperated path planning logic from
+controller.py which contains all logic for velocity and each motor speed.
+
+## 1st Mar 2023
+Added function mode in path planner which generates list of setpoints from
+given equations of x, y and theta.
+
+Also added logic for trajectory following, which removes the trajectory
+distortion due to physical limitations of motor speed.
