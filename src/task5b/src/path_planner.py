@@ -34,9 +34,15 @@ class PathPlanner():
     def __init__(self):
         ################## GLOBAL VARIABLES ######################
 
-        self.x_goals = []
-        self.y_goals = []
-        self.theta_goals = []
+        self.x_goals = np.array([])
+        self.y_goals = np.array([])
+        self.theta_goals = np.array([])
+        # self.x_goals = np.array([250, 255, 260, 270, 270, 270])
+        # self.y_goals = np.array([250, 250, 250, 255, 260, 265])
+        # self.theta_goals = np.array([0, 0, 0, 0, 0, 0])
+        # self.x_goals = np.array([150, 150, 350, 250])
+        # self.y_goals = np.array([300, 150, 150, 250])
+        # self.theta_goals = np.array([3*PI/4, -3*PI/4, -PI/4, 0])
 
         # position as [x, y, theta]
         self.hola_position = [0, 0, 0]              # current position
@@ -44,7 +50,7 @@ class PathPlanner():
 
         self.goal_index = 0					# For travercing the setpoints
         
-        self.max_setpoints = 100            # max setpoints to be trasversed by bot
+        self.max_setpoints = 30            # max setpoints to be trasversed by bot
 
         # variables for P controller
         self.const_vel = [0.0065, 0.50]			# [kp_xy, kp_w]
@@ -107,11 +113,13 @@ class PathPlanner():
         '''
         Limit x, y velocities while maintaining the ratio between them to maintain trajectory
         '''
-        max_velocity = 2
-        ratio = 10
+        max_velocity = 0.8
+        # rospy.loginfo(self.vel.linear.x)
+        ratio = 1.2
         if(abs(self.vel.linear.x) > max_velocity and abs(self.vel.linear.y) > max_velocity):
             self.vel.linear.x /= ratio
             self.vel.linear.y /= ratio
+            self.vel.angular.z /= ratio
 
     def position_controller(self):
         '''
@@ -143,8 +151,8 @@ class PathPlanner():
         
         # take few points from 0 to 2*PI and generate setpoints in x, y and theta arrays
         t = np.linspace(0, 2*PI, num=self.max_setpoints)       
-        x = lambda t: 400*math.cos(t)
-        y = lambda t: 200*math.sin(2*t)
+        x = lambda t: 150*math.cos(t) + 250
+        y = lambda t: 80*math.sin(2*t) + 250
         theta = lambda t: (PI/4)*math.sin(t) # you may need to add a phase shift
         
         self.x_goals = np.array([x(i) for i in t])
@@ -179,6 +187,7 @@ class PathPlanner():
 
             # print(self.vel)
             self.goal_publisher.publish(self.vel)
+            # rospy.loginfo("Goal: "+str([self.vel.linear.x, self.vel.linear.y, self.vel.angular.z]))
             self.next_goal()
 
 
