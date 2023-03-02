@@ -22,6 +22,7 @@ from sensor_msgs.msg import Image 	# Image is the message type for images in ROS
 from cv_bridge import CvBridge	# Package to convert between ROS and OpenCV Images
 import cv2				# OpenCV Library
 from geometry_msgs.msg import Pose2D	# Required to publish ARUCO's detected position & orientation
+import math
 
 
 class Feedback():
@@ -97,7 +98,7 @@ class Feedback():
         arena = {"4": [0, 0], "8": [0, 0], "10": [0, 0], "12":[0, 0]}
         length_ids = len(ids)
 
-        cv2.putText(self.current_frame, f"{self.bot_centroid} {self.theta}",
+        cv2.putText(self.current_frame, f"{self.bot_centroid} {math.degrees(self.theta)}",
             (10, 20), cv2.FONT_HERSHEY_SIMPLEX,
             0.5, (0, 255, 0), 2)
 
