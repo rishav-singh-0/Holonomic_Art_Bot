@@ -15,5 +15,5 @@ roslaunch usb_cam_stream_publisher.launch video_device:=/dev/video0 image_width:
   </node>
   <node name="localization" pkg="task5b" type="feedback.py" output="screen" />
   <node name="path_planner" pkg="task5b" type="path_planner.py" output="screen" />
-  <node name="hardware_controller" pkg="task5b" type="controller.py" output="screen" />
+  <!-- <node name="hardware_controller" pkg="task5b" type="controller.py" output="screen" /> -->
 </launch>
