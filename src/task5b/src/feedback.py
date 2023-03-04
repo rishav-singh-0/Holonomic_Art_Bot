@@ -22,6 +22,7 @@ from sensor_msgs.msg import Image 	# Image is the message type for images in ROS
 from cv_bridge import CvBridge	# Package to convert between ROS and OpenCV Images
 import cv2				# OpenCV Library
 from geometry_msgs.msg import Pose2D	# Required to publish ARUCO's detected position & orientation
+from cv_basics.msg import aruco_data
 import math
 
 
@@ -29,7 +30,8 @@ class Feedback():
     def __init__(self):
         ############################ GLOBALS #############################
 
-        self.aruco_msg = Pose2D()
+        # self.aruco_msg = Pose2D()
+        self.aruco_msg = aruco_data()
         self.current_frame = np.empty([])
 
         self.aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
@@ -43,7 +45,7 @@ class Feedback():
         rospy.init_node('aruco_feedback_node')
         # rospy.Subscriber('overhead_cam/image_raw', Image, self.callback)
         rospy.Subscriber('usb_cam/image_raw', Image, self.callback)
-        self.aruco_publisher = rospy.Publisher('detected_aruco', Pose2D, queue_size=10)
+        self.aruco_publisher = rospy.Publisher('/detected_aruco', aruco_data, queue_size=10)
 
     ##################### FUNCTION DEFINITIONS #######################
 
@@ -102,31 +104,37 @@ class Feedback():
             (10, 20), cv2.FONT_HERSHEY_SIMPLEX,
             0.5, (0, 255, 0), 2)
 
+        aruco_bot = np.array([])
+
         # Camera window
         cv2.imshow("Camera Window", self.current_frame)
         cv2.waitKey(10)  # adding delay
 
         try:
-            # # raise exception if any one aruco disappears
-            # if(length_ids != 5):
-            #     raise Exception("5 Arucos not visible!")
+            # raise exception if any one aruco disappears
+            if(length_ids != 5):
+                raise Exception("5 Arucos not visible!")
 
             # # creating arena and bot locations
-            # for i in range(0, length_ids):
-            #     if(ids[i][0] == 15):
-            #         aruco_bot = corners[i][0]
-            #     elif(ids[i][0] == 4):
-            #         arena["4"] = self.centroid(corners[i][0])
-            #     elif(ids[i][0] == 8):
-            #         arena["8"] = self.centroid(corners[i][0])
-            #     elif(ids[i][0] == 10):
-            #         arena["10"] = self.centroid(corners[i][0])
-            #     elif(ids[i][0] == 12):
-            #         arena["12"] = self.centroid(corners[i][0])
+            for i in range(0, length_ids):
+                if(ids[i][0] == 15):
+                    aruco_bot = corners[i][0]
+                elif(ids[i][0] == 4):
+                    arena["4"] = self.centroid(corners[i][0])
+                elif(ids[i][0] == 8):
+                    arena["8"] = self.centroid(corners[i][0])
+                elif(ids[i][0] == 10):
+                    arena["10"] = self.centroid(corners[i][0])
+                elif(ids[i][0] == 12):
+                    arena["12"] = self.centroid(corners[i][0])
+                else:
+                    raise Exception("Bot not visible!")
+
             
             # if only bot aruco is visible
-            if(ids[0][0] == 15):
-                aruco_bot = corners[0][0]
+            # if(ids[0][0] == 15):
+            #     aruco_bot = corners[0][0]
+                            
 
         except Exception as e:
             # rospy.logerr(e)
@@ -137,26 +145,26 @@ class Feedback():
 
         # taking 2 points for determining line vector(box axis)
         v1 = self.create_vector(bot_centroid, aruco_bot[0]/2 + aruco_bot[1]/2) 	#bot axis
-        v2 = np.array([0, -1])										#camera axis
-        # v2 = self.create_vector(arena["12"], arena["4"])
+        # v2 = np.array([0, -1])										#camera axis
+        v2 = self.create_vector(arena["12"], arena["4"])
         # angle between bot axis and camera axis vectors will determine bot orietation
         theta = self.angle_between(v1, v2)
         # print(x, y, theta)
         
         # scaling centroid of bot wrt camera frane and arena frame
         # currently taking aruco id "4" as reference
-        # bot_centroid = self.create_vector(arena["4"], bot_centroid)
-        # side_len_x = self.side_length(arena["4"], arena["8"])
-        # bot_centroid[0] = bot_centroid[0]*500/side_len_x
-        # side_len_y = self.side_length(arena["4"], arena["12"])
-        # bot_centroid[1] = bot_centroid[1]*500/side_len_y
+        bot_centroid = self.create_vector(arena["4"], bot_centroid)
+        side_len_x = self.side_length(arena["4"], arena["8"])
+        bot_centroid[0] = bot_centroid[0]*500/side_len_x
+        side_len_y = self.side_length(arena["4"], arena["12"])
+        bot_centroid[1] = bot_centroid[1]*500/side_len_y
         
         # print(bot_centroid[0], bot_centroid[1], theta)
         self.publish(bot_centroid[0], bot_centroid[1], theta)
         
         self.bot_centroid[0] = round(bot_centroid[0], 3)
         self.bot_centroid[1] = round(bot_centroid[1], 3)
-        self.theta = round(theta, 5)
+        self.theta = theta
 
         # adding delay
         rospy.sleep(0.001)
