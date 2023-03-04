@@ -27,6 +27,7 @@ AccelStepper stepper_left(AccelStepper::DRIVER, LEFT_WHEEL_STEP, LEFT_WHEEL_DIR)
 AccelStepper stepper_right(AccelStepper::DRIVER, RIGHT_WHEEL_STEP, RIGHT_WHEEL_DIR);
 
 Servo myservo;        // create servo object to control a servo
+bool servo_pos = 0;
 int up_pos = 10;        // variable to store the servo position
 int down_pos = 95;        // variable to store the servo position
 
@@ -58,7 +59,6 @@ void setup() {
 void loop() {
 
   static bool ready = false;
-  float servo_pos;
 
   if(Serial.available()){                  //Check if any data is available on Serial
     rec_data = Serial.readStringUntil('\n');    //Read message on Serial until new char(\n) which indicates end of message. Received data is stored in msg
@@ -69,7 +69,7 @@ void loop() {
     wheel[FRONT].force = atof(strtok(buf+1, ","));
     wheel[LEFT].force = atof(strtok(NULL, ","));
     wheel[RIGHT].force = atof(strtok(NULL, ","));
-    servo_pos = atof(strtok(NULL, ","));
+    servo_pos = atoi(strtok(NULL, ","));
 
     // Serial.print(rec_data.c_str());
 
@@ -79,7 +79,8 @@ void loop() {
     // Serial.print(wheel[LEFT].force);
     // Serial.print("   ");
     // Serial.print(wheel[RIGHT].force);
-    // Serial.print ("\n");
+    Serial.print ("\n");
+    Serial.print(servo_pos);
     ready = true;
   }
   else{
@@ -99,12 +100,15 @@ void loop() {
     Serial.print(stepper_right.speed());
     Serial.print("   ");
     Serial.print ("\n");
-
-    myservo.write(up_pos);           // tell servo to go to position in variable 'up_pos'
-    delay(1000);
   }
-  myservo.write(down_pos);           // tell servo to go to position in variable 'down_pos'
 
+  if(servo_pos == 1){
+    myservo.write(down_pos);           // tell servo to go to position in variable 'down_pos'
+    // delay(1000);
+  }
+  else{
+    myservo.write(up_pos);           // tell servo to go to position in variable 'up_pos'
+  }
   // running the motors
   run_speed();
 
