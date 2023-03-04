@@ -23,9 +23,7 @@ import socket
 import numpy as np
 
 from geometry_msgs.msg import Wrench		# Message type used for publishing force vectors
-from geometry_msgs.msg import PoseArray	# Message type used for receiving goals
-from geometry_msgs.msg import Pose2D		# Message type used for receiving feedback
-from std_srvs.srv import Empty			# for shutdown hook
+from std_msgs.msg import Int32              # taskStatus
 from geometry_msgs.msg import Twist         # velocity
 
 import time
@@ -67,6 +65,13 @@ class Controller():
         # socket connection
         self.connection =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket_conn = 0
+        
+        # task status
+        self.taskStatus = Int32()
+        self.taskStatus.data = 0    # indicating start of the run, 0 means not running
+        
+        # drawing pen status
+        self.penStatus = 0
 
         #################### ROS Node ############################
 
@@ -80,7 +85,10 @@ class Controller():
         self.front_wheel_pub = rospy.Publisher('/front_wheel_force', Wrench, queue_size=10)
         self.left_wheel_pub = rospy.Publisher('/left_wheel_force', Wrench, queue_size=10)
 
-        rospy.Subscriber('path_plan', Twist, self.path_goals_callback)
+        self.taskStatusPub = rospy.Publisher('/taskStatus', Int32, queue_size=10)
+
+        rospy.Subscriber('/path_plan', Twist, self.path_goals_callback)
+        rospy.Subscriber('/penStatus', Int32, self.pen_status_callback)
         
     ##################### FUNCTION DEFINITIONS #######################
 
@@ -88,10 +96,13 @@ class Controller():
         self.vel['x'] = msg.linear.x
         self.vel['y'] = msg.linear.y
         self.vel['w'] = msg.angular.z
+        
+    def pen_status_callback(self, msg):
+        self.penStatus = msg.data
+        # print(self.penStatus)
 
     def is_ready(self):
-        condition = self.vel['x'] == None or \
-                    self.vel['y'] == None
+        condition = (self.vel['x'] == None)
         return condition
     
     def connect_socket(self):
@@ -106,9 +117,11 @@ class Controller():
     
     def socket_send_data(self):
         # data = list(self.wheel_force.values())
-        data = str([round(i, 2) for i in self.wheel_force.values()]) + '\n'
+        data = [round(i, 2) for i in self.wheel_force.values()]
+        data.append(self.penStatus)
+        data = str(data) + '\n'
         rec_data = self.socket_conn.recv(1024)
-        # rospy.loginfo(data)
+        rospy.loginfo(data)
         # rospy.loginfo(rec_data)
         self.socket_conn.sendall(str.encode(data))
         rospy.sleep(0.1)
@@ -168,9 +181,15 @@ class Controller():
             self.rate.sleep()
             
             # checking if the subscibed variables are on position
-            if self.is_ready():
+            if self.is_ready() and (self.taskStatus.data == 0):
                 print("Waiting!")
+                self.taskStatusPub.publish(self.taskStatus)
                 continue
+
+            if (self.taskStatus.data == 0):
+                self.taskStatus.data = 1
+                self.taskStatusPub.publish(self.taskStatus)
+
             
             # calculate force of each wheel according to given velocities
             self.inverse_kinematics()
