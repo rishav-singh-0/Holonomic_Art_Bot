@@ -1,0 +1,10 @@
+<!--
+Example of run:
+roslaunch usb_cam_stream_publisher.launch video_device:=/dev/video0 image_width:=640 image_height:=480 
+-->
+
+<launch>
+  <node name="localization" pkg="task5b" type="feedback.py" output="screen" />
+  <node name="path_planner" pkg="task5b" type="path_planner.py" output="screen" />
+  <node name="hardware_controller" pkg="task5b" type="controller.py" output="screen" />
+</launch>
