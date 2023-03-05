@@ -117,33 +117,30 @@ class PathPlanner():
         # print(self.hola_position)
         if(condition):
 
-            reached_pos = self.goal_index < len(self.x_goals[self.contour_index])-1
+            reached_pos = self.goal_index < len(self.x_goals[self.contour_index]) - 1
             reached_last_pos = self.goal_index == len(self.x_goals[self.contour_index]) - 1
-            self.contour_index < len(self.x_goals)-1
+            reached_contour = self.contour_index < len(self.x_goals) - 1
+            # rospy.loginfo("pos: "+str(reached_pos) + " last_pos: "+str(reached_last_pos) + " contour: "+str(reached_contour))
 
-            if((self.contour_index < len(self.x_goals)-1) and reached_last_pos):
+            rospy.loginfo("Goal reached " + str(self.goal_index)+": "+str(self.goal_position))
+            self.goal_position = [
+                self.x_goals[self.contour_index][self.goal_index], 
+                self.y_goals[self.contour_index][self.goal_index], 
+                self.theta_goals[self.contour_index][self.goal_index]
+            ]
+
+            # changing contour
+            if((reached_contour) and reached_last_pos):
                 rospy.loginfo("Changing Contour: " + str(self.contour_index)+": "+str(self.goal_position))
                 self.contour_index += 1
                 self.goal_index = 0
-                self.penData.data = 0
-                self.penPub.publish(self.penData)
-                return
 
+            # next goal
             if(reached_pos):
                 self.goal_index += 1
                 rospy.sleep(0.1)
-                rospy.loginfo("Goal reached " + str(self.goal_index)+": "+str(self.goal_position))
-                self.goal_position = [
-                    self.x_goals[self.contour_index][self.goal_index], 
-                    self.y_goals[self.contour_index][self.goal_index], 
-                    self.theta_goals[self.contour_index][self.goal_index]
-                ]
-            if(self.goal_index == 1):
-                self.penData.data = 1
-            else:
-                self.penData.data = 1
-            self.penPub.publish(self.penData)
             
+
 
     def safety_check(self):
         '''
@@ -183,8 +180,11 @@ class PathPlanner():
         size_img = (500,500)
         # max_points = 20
 
-        # img = cv2.imread('/mnt/STORAGE/project/hola_bot/src/task5b/src/snapchat.png',0)
-        img = cv2.imread('/mnt/STORAGE/project/hola_bot/src/task5b/src/smile.png',0)
+        img_path = "/mnt/STORAGE/project/hola_bot/src/task5b/src/smile.png"
+        # img_path = "/mnt/STORAGE/project/hola_bot/src/task5b/src/snapchat.png"
+        rospy.loginfo("Image: " + img_path)
+
+        img = cv2.imread(img_path, 0)
 
         img = cv2.resize(img,size_img)
         black = np.zeros((size_img[0],size_img[1],3),np.uint8)
@@ -194,15 +194,11 @@ class PathPlanner():
 
         xList, yList, wList = [], [], []
 
-        x_goals = []
-        y_goals = []
-        theta_goals = []
+        x_goals, y_goals, theta_goals = [], [], []
 
         for i in range(0,len(contours)):
 
-            xList = []
-            yList = []
-            wList = []
+            xList, yList, wList = [], [], []
 
             len_cont = len(contours[i])
 
@@ -230,7 +226,7 @@ class PathPlanner():
         self.y_goals = y_goals
         self.theta_goals = theta_goals
 
-        self.publish_contours()
+        # self.publish_contours()
 
     def function_mode(self):
         
@@ -247,21 +243,22 @@ class PathPlanner():
         self.x_goals = list(self.x_goals)
         self.y_goals = list(self.x_goals)
         self.theta_goals = list(self.theta_goals)
-        self.publish_contours()
-
-    def publish_contours(self):
-        # publishing contour
-        self.cData.data = str([self.x_goals,self.y_goals])
-        self.contourPub.publish(self.cData)
-
+        # self.publish_contours()
 
     def publisher(self):
         self.goal_publisher.publish(self.vel)
         # rospy.loginfo("Goal: "+str([self.vel.linear.x, self.vel.linear.y, self.vel.angular.z]))
         
-        # self.penData.data = 1
-        # self.penPub.publish(self.penData)
-        self.publish_contours()
+        # Pen up-down mechanism
+        if(self.goal_index == 0):
+            self.penData.data = 0
+        else:
+            self.penData.data = 1
+        self.penPub.publish(self.penData)
+
+        # publishing contour
+        self.cData.data = str([self.x_goals,self.y_goals])
+        self.contourPub.publish(self.cData)
 
 
     def main(self):
