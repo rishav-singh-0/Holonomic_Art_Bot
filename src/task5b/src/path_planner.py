@@ -117,14 +117,19 @@ class PathPlanner():
         # print(self.hola_position)
         if(condition):
 
-            if(self.contour_index < len(self.x_goals)-1):
+            reached_pos = self.goal_index < len(self.x_goals[self.contour_index])-1
+            reached_last_pos = self.goal_index == len(self.x_goals[self.contour_index]) - 1
+            self.contour_index < len(self.x_goals)-1
+
+            if((self.contour_index < len(self.x_goals)-1) and reached_last_pos):
+                rospy.loginfo("Changing Contour: " + str(self.contour_index)+": "+str(self.goal_position))
                 self.contour_index += 1
                 self.goal_index = 0
                 self.penData.data = 0
                 self.penPub.publish(self.penData)
                 return
 
-            if(self.goal_index < len(self.x_goals[self.contour_index])-1):
+            if(reached_pos):
                 self.goal_index += 1
                 rospy.sleep(0.1)
                 rospy.loginfo("Goal reached " + str(self.goal_index)+": "+str(self.goal_position))
@@ -211,6 +216,11 @@ class PathPlanner():
                 x_goals.append(xList)
                 y_goals.append(yList)
                 theta_goals.append(wList)
+        
+        for cont in range(len(x_goals)):
+            x_goals[cont].append(x_goals[cont][0])
+            y_goals[cont].append(y_goals[cont][0])
+            theta_goals[cont].append(theta_goals[cont][0])
         
         # print(x_goals, len(x_goals))
         # print(y_goals, len(y_goals))
