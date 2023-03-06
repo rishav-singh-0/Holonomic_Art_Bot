@@ -1,3 +1,48 @@
+
+## 5th Mar 2023
+Decided to work on simulator(gazebo) for refining the scripts as bot in not
+with me right now. Fixed the `hola_bot` package which contains the gazebo world
+files, changed camera source and everything is working same on simulator.
+
+## 4th Mar 2023
+After 2 hrs of sleep and charging ourself(both me and battery), still battery
+is not fully charged. Bot started to draw Snapchat logo like it drew never
+before. While drawing the smile face, it is found that bot is reaching 1st
+position of each contours and going to each position of last contour, so only
+circle is drawn at this point. I knew that it is a bug in indexing the contours
+but its a race against time, cause i have to go from Vadodra to Nadiad(can't
+miss the 3rd train) and after giving 2 presentations(which i havent prepered
+yet), i have to leave to Jamnagar.
+
+Joined all three videos and screen recordings, rendered the video, uploaded on
+[youtube](https://youtu.be/6YWC5tnd194) in Nadiad. Combined the submission
+files and subbmitted while sitting in the train to Jamnagar.
+
+Fixed indexing bug, found that contour is not complete, so appended the
+setpoints with the first element to form complete loop.
+
+## 3rd Mar 2023 (Friday)
+Transferring an extra bit of pen status along with the motor velocities to the
+board. Wrote all the required topics for eval script to work(still not working
+as expected). Joined all the missing parts of the script. Figured out that
+given equations needed to be scaled for 500x500 pixels for drawing infinity
+pattern.
+
+Prepared a recipe of ink, by combining white board's ink, sketch pen and water
+so that it is visible enough as well as erasable
+
+Recorded video for Lissajous pattern(infinity), there drawn lines are not
+visible from overhead camera and eval script als didnt gave expected output,
+but decided to move to another pattern. While starting to drawing Snapchat logo
+it was already 4 AM, and after fixing a few bugs in image mode function, the
+battery gave up(discharged).
+
+## 2nd Mar 2023
+Refined the function to extract contours from an image and convert to x, y and
+theta as required. Added topic for Pen up down mechanism. Also connected the
+servo to the board and set the required angles for up and down position of
+brush.
+
 ## 1st Mar 2023
 Added function mode in path planner which generates list of setpoints from
 given equations of x, y and theta.
