@@ -23,7 +23,7 @@ import socket
 import numpy as np
 
 from geometry_msgs.msg import Wrench		# Message type used for publishing force vectors
-from std_msgs.msg import Int32              # taskStatus
+from std_msgs.msg import Int32              # penStatus
 from geometry_msgs.msg import Twist         # velocity
 
 import time
@@ -66,10 +66,6 @@ class Controller():
         self.connection =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket_conn = 0
         
-        # task status
-        self.taskStatus = Int32()
-        self.taskStatus.data = 0    # indicating start of the run, 0 means not running
-        
         # drawing pen status
         self.penStatus = 0
 
@@ -84,8 +80,6 @@ class Controller():
         self.right_wheel_pub = rospy.Publisher('/right_wheel_force', Wrench, queue_size=10)
         self.front_wheel_pub = rospy.Publisher('/front_wheel_force', Wrench, queue_size=10)
         self.left_wheel_pub = rospy.Publisher('/left_wheel_force', Wrench, queue_size=10)
-
-        self.taskStatusPub = rospy.Publisher('/taskStatus', Int32, queue_size=10)
 
         rospy.Subscriber('/path_plan', Twist, self.path_goals_callback)
         rospy.Subscriber('/penStatus', Int32, self.pen_status_callback)
@@ -181,15 +175,9 @@ class Controller():
             self.rate.sleep()
             
             # checking if the subscibed variables are on position
-            if self.is_ready() and (self.taskStatus.data == 0):
-                print("Waiting!")
-                self.taskStatusPub.publish(self.taskStatus)
+            if self.is_ready():
+                print("Waiting in Controller!")
                 continue
-
-            if (self.taskStatus.data == 0):
-                self.taskStatus.data = 1
-                self.taskStatusPub.publish(self.taskStatus)
-
             
             # calculate force of each wheel according to given velocities
             self.inverse_kinematics()
