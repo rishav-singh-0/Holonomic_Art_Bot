@@ -21,7 +21,6 @@ import rospy
 from sensor_msgs.msg import Image 	# Image is the message type for images in ROS
 from cv_bridge import CvBridge	# Package to convert between ROS and OpenCV Images
 import cv2				# OpenCV Library
-from geometry_msgs.msg import Pose2D	# Required to publish ARUCO's detected position & orientation
 from cv_basics.msg import aruco_data
 import math
 from collections import deque
