@@ -24,6 +24,8 @@ import cv2				# OpenCV Library
 from geometry_msgs.msg import Pose2D	# Required to publish ARUCO's detected position & orientation
 from cv_basics.msg import aruco_data
 import math
+from collections import deque
+from std_msgs.msg import Int32              # penStatus
 
 
 class Feedback():
@@ -39,6 +41,10 @@ class Feedback():
         
         self.bot_centroid = [250, 250]
         self.theta = 0
+        
+        # drawing pen status
+        self.penStatus = 0
+        self.drawn = deque(maxlen=10000)
 
         #################### ROS Node ############################
 
@@ -46,8 +52,26 @@ class Feedback():
         # rospy.Subscriber('overhead_cam/image_raw', Image, self.callback)
         rospy.Subscriber('usb_cam/image_raw', Image, self.callback)
         self.aruco_publisher = rospy.Publisher('/detected_aruco', aruco_data, queue_size=10)
+        rospy.Subscriber('/penStatus', Int32, self.pen_status_callback)
 
     ##################### FUNCTION DEFINITIONS #######################
+
+    def pen_status_callback(self, msg):
+        self.penStatus = msg.data
+    
+    def draw_path(self):
+        if(self.penStatus == 1):
+            self.drawn.appendleft((int(self.bot_centroid[0]), int(self.bot_centroid[1])))
+        	# loop over the set of tracked points
+
+        for i in range(1, len(self.drawn)):
+            # # if either of the tracked points are None, ignore them
+            # if self.drawn[i - 1] is None or self.drawn[i] is None:
+            #     continue
+     
+            # draw the connecting lines
+            # cv2.line(self.current_frame, self.drawn[i - 1], self.drawn[i], (0, 0, 255), 1)
+            cv2.circle(self.current_frame, self.drawn[i], radius=0, color=(0, 0, 255), thickness=2)
 
     def centroid(self, arr):
         length = arr.shape[0]
@@ -105,6 +129,8 @@ class Feedback():
             0.5, (0, 255, 0), 2)
 
         aruco_bot = np.array([])
+        
+        self.draw_path()
 
         # Camera window
         cv2.imshow("Camera Window", self.current_frame)
