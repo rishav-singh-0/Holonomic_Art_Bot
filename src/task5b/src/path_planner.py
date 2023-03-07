@@ -200,10 +200,14 @@ class PathPlanner():
 
             xList, yList, wList = [], [], []
 
-            len_cont = len(contours[i])
-
             if(hierarchy[0][i][3] != -1):
-                for j in range(0,len_cont, 10):
+                # perimeter = cv2.arcLength(contours[i], closed=True)
+                # epsilon = 0.008*perimeter
+                epsilon = 0.006*size_img[1]
+                contours[i] = cv2.approxPolyDP(contours[i], epsilon, closed=True)
+
+                len_cont = len(contours[i])
+                for j in range(0,len_cont):
                     black[contours[i][j][0][1]][contours[i][j][0][0]] = 255
                     xList.append(contours[i][j][0][0])
                     yList.append(contours[i][j][0][1])
@@ -226,7 +230,7 @@ class PathPlanner():
         self.y_goals = y_goals
         self.theta_goals = theta_goals
 
-        # self.publish_contours()
+        self.publish_contours()
 
     def function_mode(self):
         
@@ -234,16 +238,21 @@ class PathPlanner():
         t = np.linspace(0, 2*PI, num=self.max_setpoints)       
         x = lambda t: 200*math.cos(t) + 250
         y = lambda t: 100*math.sin(2*t) + 250
-        theta = lambda t: (PI/4)*math.sin(t) # you may need to add a phase shift
+        theta = lambda t: (PI/4)*math.sin(t + PI/2) # you may need to add a phase shift
         
-        self.x_goals = np.array([np.array([x(i) for i in t])])
-        self.y_goals = np.array([np.array([y(i) for i in t])])
-        self.theta_goals = np.array([np.array([theta(i) for i in t])])
+        self.x_goals = [[x(i) for i in t],]
+        self.y_goals = [[y(i) for i in t],]
+        self.theta_goals = [[theta(i) for i in t],]
+        
+        print(self.x_goals, len(self.x_goals))
 
-        self.x_goals = list(self.x_goals)
-        self.y_goals = list(self.x_goals)
-        self.theta_goals = list(self.theta_goals)
-        # self.publish_contours()
+        self.publish_contours()
+
+    def publish_contours(self):
+        # publishing contour
+        self.cData.data = str([self.x_goals, self.y_goals])
+        self.contourPub.publish(self.cData)
+        self.rate.sleep()
 
     def publisher(self):
         self.goal_publisher.publish(self.vel)
@@ -257,8 +266,7 @@ class PathPlanner():
         self.penPub.publish(self.penData)
 
         # publishing contour
-        self.cData.data = str([self.x_goals,self.y_goals])
-        self.contourPub.publish(self.cData)
+        # self.publish_contours()
 
 
     def main(self):
