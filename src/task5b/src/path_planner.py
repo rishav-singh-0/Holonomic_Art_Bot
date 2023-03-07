@@ -26,11 +26,8 @@ from geometry_msgs.msg import Twist         # velocity
 from std_msgs.msg import String             # x and y setpoints/pixel list
 from std_msgs.msg import Int32              # taskStatus
 
-import time
 import math		# If you find it useful
 from math import pi as PI
-
-from tf.transformations import euler_from_quaternion	# Convert angles
 
 
 class PathPlanner():
@@ -75,6 +72,10 @@ class PathPlanner():
         self.penData = Int32()
         self.penData.data = 0       # brush is not drawing
 
+        # task status
+        self.taskStatus = Int32()
+        self.taskStatus.data = 0    # indicating start of the run, 0 means not running
+
         #################### ROS Node ############################
 
         rospy.init_node('path_planner_node')
@@ -85,8 +86,9 @@ class PathPlanner():
         
         self.contourPub = rospy.Publisher('/contours', String, queue_size=10)
         self.penPub = rospy.Publisher('/penStatus', Int32, queue_size=10)
+        self.taskStatusPub = rospy.Publisher('/taskStatus', Int32, queue_size=10)
 
-        # rospy.Subscriber('/endSignal',Int32, self.end_signal_Cb) #optional
+        rospy.Subscriber('/endSignal',Int32, self.end_signal_Cb) #optional
         rospy.Subscriber('/detected_aruco', aruco_data, self.aruco_feedback_Cb)
         
     ##################### FUNCTION DEFINITIONS #######################
@@ -120,6 +122,7 @@ class PathPlanner():
             reached_pos = self.goal_index < len(self.x_goals[self.contour_index]) - 1
             reached_last_pos = self.goal_index == len(self.x_goals[self.contour_index]) - 1
             reached_contour = self.contour_index < len(self.x_goals) - 1
+            reached_last_contour = self.contour_index == len(self.x_goals) - 1
             # rospy.loginfo("pos: "+str(reached_pos) + " last_pos: "+str(reached_last_pos) + " contour: "+str(reached_contour))
 
             rospy.loginfo("Goal reached " + str(self.goal_index)+": "+str(self.goal_position))
@@ -129,17 +132,32 @@ class PathPlanner():
                 self.theta_goals[self.contour_index][self.goal_index]
             ]
 
-            # changing contour
+            # changing to next contour
             if((reached_contour) and reached_last_pos):
                 rospy.loginfo("Changing Contour: " + str(self.contour_index)+": "+str(self.goal_position))
                 self.contour_index += 1
                 self.goal_index = 0
-
-            # next goal
+            
+            # changing to next goal
             if(reached_pos):
                 self.goal_index += 1
                 rospy.sleep(0.1)
             
+            # finish job if all setpoints are reached
+            if(reached_last_pos and reached_last_contour):
+                rospy.loginfo("Run Finished!")
+                self.cleanup()
+
+            
+    def cleanup(self):
+        self.taskStatus.data = 1
+        self.taskStatusPub.publish(self.taskStatus)
+        self.goal_publisher.publish(self.vel)
+        self.penData.data = 0
+        self.penPub.publish(self.penData)
+        self.rate.sleep()
+        rospy.signal_shutdown("Run Finished!")
+        # exit(0)
 
 
     def safety_check(self):
