@@ -83,6 +83,7 @@ class Controller():
 
         rospy.Subscriber('/path_plan', Twist, self.path_goals_callback)
         rospy.Subscriber('/penStatus', Int32, self.pen_status_callback)
+        rospy.Subscriber('/taskStatus', Int32, self.task_status_callback)
         
     ##################### FUNCTION DEFINITIONS #######################
 
@@ -93,7 +94,13 @@ class Controller():
         
     def pen_status_callback(self, msg):
         self.penStatus = msg.data
-        # print(self.penStatus)
+    
+    def task_status_callback(self, msg):
+        self.taskStatus = msg.data
+        
+        # cleanup when task is completed
+        if self.taskStatus == 1:
+            self.cleanup()
 
     def is_ready(self):
         condition = (self.vel['x'] == None)
@@ -121,6 +128,9 @@ class Controller():
         rospy.sleep(0.1)
 
     def signal_handler(self, sig, frame):
+        self.cleanup()
+    
+    def cleanup(self):
         print('Clean-up !')
         
         # closing socket connection
@@ -137,7 +147,9 @@ class Controller():
         # self.reset_world()
 
         print("cleanup done")
-        sys.exit(0)
+        self.rate.sleep()
+        # rospy.signal_shutdown("Controller: Finished Job!")
+        # sys.exit(0)
 
     def inverse_kinematics(self):
         '''
