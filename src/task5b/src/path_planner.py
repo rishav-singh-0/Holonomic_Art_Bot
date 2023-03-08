@@ -70,11 +70,14 @@ class PathPlanner():
         # publish variables
         self.cData = String()
         self.penData = Int32()
-        self.penData.data = 0       # brush is not drawing
+        self.penData.data = 0       # Publish 1 when the pen is down(drawing) and 0 when the pen is up
+        
+        # see if all the destinations are reached
+        self.taskCompleted = 0      # 0 means not completed
 
         # task status
         self.taskStatus = Int32()
-        self.taskStatus.data = 0    # indicating start of the run, 0 means not running
+        self.taskStatus.data = 0    # indicating start of the run, 0 means running, 1 means taskEnd
 
         #################### ROS Node ############################
 
@@ -145,18 +148,20 @@ class PathPlanner():
             
             # finish job if all setpoints are reached
             if(reached_last_pos and reached_last_contour):
+                self.taskCompleted = 1
                 rospy.loginfo("Run Finished!")
                 self.cleanup()
 
             
     def cleanup(self):
-        self.taskStatus.data = 1
+        if self.taskCompleted == 1:
+            self.taskStatus.data = 1
         self.taskStatusPub.publish(self.taskStatus)
         self.goal_publisher.publish(self.vel)
         self.penData.data = 0
         self.penPub.publish(self.penData)
         self.rate.sleep()
-        rospy.signal_shutdown("Run Finished!")
+        # rospy.signal_shutdown("Run Finished!")
         # exit(0)
 
 
@@ -273,6 +278,8 @@ class PathPlanner():
         self.rate.sleep()
 
     def publisher(self):
+        
+        # Publishing required velocity in x, y, theta form
         self.goal_publisher.publish(self.vel)
         # rospy.loginfo("Goal: "+str([self.vel.linear.x, self.vel.linear.y, self.vel.angular.z]))
         
@@ -282,9 +289,13 @@ class PathPlanner():
         else:
             self.penData.data = 1
         self.penPub.publish(self.penData)
+        
+        # task status publisher
+        self.taskStatus.data = 1 if (self.taskCompleted==1) else 0
+        self.taskStatusPub.publish(self.taskStatus)
 
         # publishing contour
-        # self.publish_contours()
+        self.publish_contours()
 
 
     def main(self):
