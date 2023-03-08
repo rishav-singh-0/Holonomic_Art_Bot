@@ -91,7 +91,7 @@ class PathPlanner():
         self.penPub = rospy.Publisher('/penStatus', Int32, queue_size=10)
         self.taskStatusPub = rospy.Publisher('/taskStatus', Int32, queue_size=10)
 
-        rospy.Subscriber('/endSignal',Int32, self.end_signal_Cb) #optional
+        rospy.Subscriber('/endSignal',Int32, self.end_signal_Cb)
         rospy.Subscriber('/detected_aruco', aruco_data, self.aruco_feedback_Cb)
         
     ##################### FUNCTION DEFINITIONS #######################
@@ -103,7 +103,8 @@ class PathPlanner():
         # print(self.hola_position)
     
     def end_signal_Cb(self, msg):
-        print(msg.data)
+        if msg.data == 1:
+            self.cleanup()
 
     def is_ready(self):
         condition = self.x_goals == [] or \
@@ -161,8 +162,8 @@ class PathPlanner():
         self.penData.data = 0
         self.penPub.publish(self.penData)
         self.rate.sleep()
-        # rospy.signal_shutdown("Run Finished!")
-        # exit(0)
+        rospy.signal_shutdown("Run Finished!")
+        exit(0)
 
 
     def safety_check(self):
