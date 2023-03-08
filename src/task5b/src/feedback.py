@@ -52,12 +52,19 @@ class Feedback():
         rospy.Subscriber('usb_cam/image_raw', Image, self.callback)
         self.aruco_publisher = rospy.Publisher('/detected_aruco', aruco_data, queue_size=10)
         rospy.Subscriber('/penStatus', Int32, self.pen_status_callback)
+        rospy.Subscriber('/endSignal',Int32, self.end_signal_Cb)
 
     ##################### FUNCTION DEFINITIONS #######################
 
     def pen_status_callback(self, msg):
         self.penStatus = msg.data
     
+    def end_signal_Cb(self, msg):
+        
+        if msg.data == 1:
+            rospy.signal_shutdown("Aruco Feedback: Run Finished!")
+            exit(0)
+
     def draw_path(self):
         if(self.penStatus == 1):
             self.drawn.appendleft((int(self.bot_centroid[0]), int(self.bot_centroid[1])))
