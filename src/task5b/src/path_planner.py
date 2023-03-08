@@ -260,15 +260,19 @@ class PathPlanner():
         
         # take few points from 0 to 2*PI and generate setpoints in x, y and theta arrays
         t = np.linspace(0, 2*PI, num=self.max_setpoints)       
-        x = lambda t: 200*math.cos(t) + 250
-        y = lambda t: 100*math.sin(2*t) + 250
-        theta = lambda t: (PI/4)*math.sin(t + PI/2) # you may need to add a phase shift
+        x = lambda p: 200*math.cos(p) + 250
+        y = lambda p: 100*math.sin(2*p) + 250
+        theta = lambda p: (PI/4)*math.sin(p + PI/2) # you may need to add a phase shift
         
-        self.x_goals = [[x(i) for i in t],]
-        self.y_goals = [[y(i) for i in t],]
-        self.theta_goals = [[theta(i) for i in t],]
+        x_goals, y_goals, theta_goals = [], [], []
+        for index in range(len(t)):
+            x_goals.append(int(x(t[index])))
+            y_goals.append(int(y(t[index])))
+            theta_goals.append(int(theta(t[index])))
         
-        print(self.x_goals, len(self.x_goals))
+        self.x_goals = [x_goals]
+        self.y_goals = [y_goals]
+        self.theta_goals = [theta_goals]
 
         self.publish_contours()
 
