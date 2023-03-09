@@ -1,35 +1,46 @@
 #!/usr/bin/env python3
 
 '''
-*****************************************************************************************
-Takes setpoints from path planner and calculates force required for each wheel to reach 
-this setpoint
-*****************************************************************************************
-'''
+* Team Id : HB#1254
+* Author List : Rishav, Kashyap
+* Filename: path_planner.py
+            Takes velocity setpoints from path_planner_node and calculates force required for
+            each wheel to reach this setpoint
+* Theme: Hola Bot -- Specific to eYRC 2022-23
+* Functions: 
+    Controller:
+        path_goals_callback(msg), pen_status_callback(msg), task_status_callback(msg), 
+        is_ready(), connect_socket(), socket_send_data(), signal_handler(sig, frame),
+        cleanup(), inverse_kinematics(), publish_force(), main()
+* Global Variables: None
 
-# Author List:	Rishav Singh, Kashyap Joshi
-# Filename:		controller.py
-# Functions:
-#			[ Comma separated list of functions in this file ]
-# Nodes:		Add your publishing and subscribing node
+* Node: controller_node:
+            This python file runs a ROS-node of name controller_node which
+            gives the force required for each wheel to reach given setpoint.
+            And gives all the required data of wheel speeds and penStatus to 
+            the Bot through socket connection.
+
+        This node publishes and subscribes the following topics:
+                PUBLICATIONS            SUBSCRIBTIONS
+                /right_wheel_force      /path_plan
+                /front_wheel_force      /penStatus
+                /left_wheel_force       /taskStatus
+'''
 
 
 ################### IMPORT MODULES #######################
 
 import rospy
 import signal		# To handle Signals by OS/user
-import sys		# To handle Signals by OS/user
+import sys		    # To handle Signals by OS/user
 import socket
+import math
 import numpy as np
 
 from geometry_msgs.msg import Wrench		# Message type used for publishing force vectors
 from std_msgs.msg import Int32              # penStatus
 from geometry_msgs.msg import Twist         # velocity
 
-import time
-import math		# If you find it useful
-
-from tf.transformations import euler_from_quaternion	# Convert angles
 
 class Controller():
 
@@ -128,6 +139,7 @@ class Controller():
         rospy.sleep(0.1)
 
     def signal_handler(self, sig, frame):
+        rospy.logerr(str(sig)+": Signal called!")
         self.cleanup()
     
     def cleanup(self):
@@ -169,7 +181,6 @@ class Controller():
                                 # + self.const_force[2]*self.sum[i]
         self.err_prev = self.wheel_force
         # self.err_sum = [self.sum[0] + self.wheel_force['front'], self.sum[1] + self.wheel_force['left'], self.sum[2] + self.wheel_force['right']]
-
         
     def publish_force(self):
         self.front_w.force.x = self.wheel_force['front']
