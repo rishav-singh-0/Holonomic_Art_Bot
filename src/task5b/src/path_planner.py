@@ -1,17 +1,31 @@
 #!/usr/bin/env python3
 
 '''
-*****************************************************************************************
-Path Planner decides path(list of goals) for bot to follow.
-Also performs the task of position controller.
-*****************************************************************************************
-'''
+* Team Id : HB#1254
+* Author List : Rishav
+* Filename: path_planner.py
+            Path Planner decides path(list of goals) for bot to follow.
+            Also performs the task of position controller.
+* Theme: Hola Bot -- Specific to eYRC 2022-23
+* Functions: 
+    PathPlanner:
+        aruco_feedback_Cb(msg), end_signal_Cb(msg), is_ready(), threshold_box(), next_goal(), 
+        cleanup(), safety_check(), position_controller(), image_mode(), function_mode(),
+        publish_contours(), publisher(), main()
+* Global Variables: None
 
-# Author List:  Rishav Singh
-# Filename:		path_planner.py
-# Functions:
-#			[ Comma separated list of functions in this file ]
-# Nodes:		Add your publishing and subscribing node
+* Node: path_planner_node:
+            This python file runs a ROS-node of name path_planner_node which
+            gives the required velocity to reach next goal. Also implements the 
+            pen up-down mechanism.
+
+        This node publishes and subscribes the following topics:
+                PUBLICATIONS            SUBSCRIBTIONS
+                /path_plan             /detected_aruco
+                /contours              /endSignal
+                /penStatus
+                /taskStatus
+'''
 
 
 ################### IMPORT MODULES #######################
@@ -38,12 +52,6 @@ class PathPlanner():
         self.x_goals = []
         self.y_goals = []
         self.theta_goals = []
-        # self.x_goals = np.array([250, 255, 260, 270, 270, 270])
-        # self.y_goals = np.array([250, 250, 250, 255, 260, 265])
-        # self.theta_goals = np.array([0, 0, 0, 0, 0, 0])
-        # self.x_goals = np.array([np.array([150, 150, 350, 250]), np.array([150, 150, 350, 250])])
-        # self.y_goals = np.array([np.array([300, 150, 150, 250]), np.array([300, 150, 150, 250])])
-        # self.theta_goals = np.array([np.array([3*PI/4, -3*PI/4, -PI/4, 0]), np.array([3*PI/4, -3*PI/4, -PI/4, 0])])
 
         # position as [x, y, theta]
         self.hola_position = [0, 0, 0]              # current position
