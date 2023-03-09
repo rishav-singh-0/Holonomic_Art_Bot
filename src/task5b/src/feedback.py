@@ -1,17 +1,30 @@
 #!/usr/bin/env python3
 
 '''
-*****************************************************************************************
-Takes raw feed from camera and calculates the localization(x, y, theta) of bot with 
-respect to arena
-*****************************************************************************************
-'''
+* Team Id : HB#1254
+* Author List : Rishav
+* Filename: feedback.py
+            Takes raw feed from camera and calculates the localization(x, y, theta) 
+            of bot with respect to arena
+* Theme: Hola Bot -- Specific to eYRC 2022-23
+* Functions: 
+    Feedback:
+        pen_status_callback(msg), end_signal_Cb(msg), draw_path(), centroid(arr), 
+        create_vector(point_1, point_2), unit_vector(vector), 
+        angle_between(vector_1, vector_2), side_length(point_1, point_2), 
+        callback(data), publish(), main()
+* Global Variables: None
 
-# Author List:	Rishav Singh
-# Filename:		feedback.py
-# Functions:
-#			[ Comma separated list of functions in this file ]
-# Nodes:		Add your publishing and subscribing node
+* Node: aruco_feedback_node:
+            This python file runs a ROS-node of name aruco_feedback_node which
+            gives the current odom_data of bot ie. x, y and theta.
+
+        This node publishes and subscribes the following topics:
+                PUBLICATIONS            SUBSCRIBTIONS
+                /detected_aruco         /usb_cam/image_raw
+                                        /penStatus
+                                        /endSignal
+'''
 
 
 ######################## IMPORT MODULES ##########################
@@ -192,19 +205,20 @@ class Feedback():
         bot_centroid[1] = bot_centroid[1]*500/side_len_y
         
         # print(bot_centroid[0], bot_centroid[1], theta)
-        self.publish(bot_centroid[0], bot_centroid[1], theta)
         
         self.bot_centroid[0] = round(bot_centroid[0], 3)
         self.bot_centroid[1] = round(bot_centroid[1], 3)
         self.theta = theta
 
+        self.publish()
+
         # adding delay
         rospy.sleep(0.001)
 
-    def publish(self, x, y, theta):
-        self.aruco_msg.x = x
-        self.aruco_msg.y = y
-        self.aruco_msg.theta = theta
+    def publish(self):
+        self.aruco_msg.x = self.bot_centroid[0]
+        self.aruco_msg.y = self.bot_centroid[1]
+        self.aruco_msg.theta = self.theta
         self.aruco_publisher.publish(self.aruco_msg)
         
     def main(self):
