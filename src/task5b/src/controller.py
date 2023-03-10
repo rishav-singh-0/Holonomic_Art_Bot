@@ -139,7 +139,7 @@ class Controller():
         rospy.sleep(0.1)
 
     def signal_handler(self, sig, frame):
-        rospy.logerr(str(sig)+": Signal called!")
+        rospy.logdebug(str(sig)+": Signal called!")
         self.cleanup()
     
     def cleanup(self):
