@@ -31,15 +31,13 @@
 ################### IMPORT MODULES #######################
 
 import rospy
-import numpy as np
-import cv2
-
-# from geometry_msgs.msg import Pose2D		# Message type used for receiving feedback
 from cv_basics.msg import aruco_data
 from geometry_msgs.msg import Twist         # velocity
 from std_msgs.msg import String             # x and y setpoints/pixel list
 from std_msgs.msg import Int32              # taskStatus
 
+import numpy as np
+import cv2
 import math		# If you find it useful
 from math import pi as PI
 
@@ -77,6 +75,7 @@ class PathPlanner():
         
         # publish variables
         self.cData = String()
+        self.contours = []
         self.penData = Int32()
         self.penData.data = 0       # Publish 1 when the pen is down(drawing) and 0 when the pen is up
         
@@ -160,7 +159,6 @@ class PathPlanner():
                 self.taskCompleted = 1
                 rospy.loginfo("Run Finished!")
                 self.cleanup()
-
             
     def cleanup(self):
         if self.taskCompleted == 1:
@@ -172,7 +170,6 @@ class PathPlanner():
         self.rate.sleep()
         rospy.signal_shutdown("Run Finished!")
         exit(0)
-
 
     def safety_check(self):
         '''
@@ -212,8 +209,9 @@ class PathPlanner():
         size_img = (500,500)
         # max_points = 20
 
-        img_path = "/mnt/STORAGE/project/hola_bot/src/task5b/src/smile.png"
+        # img_path = "/mnt/STORAGE/project/hola_bot/src/task5b/src/smile.png"
         # img_path = "/mnt/STORAGE/project/hola_bot/src/task5b/src/snapchat.png"
+        img_path = "/mnt/STORAGE/project/hola_bot/src/task5b/src/robotFinal.png"
         rospy.loginfo("Image: " + img_path)
 
         img = cv2.imread(img_path, 0)
@@ -221,30 +219,42 @@ class PathPlanner():
         img = cv2.resize(img,size_img)
         black = np.zeros((size_img[0],size_img[1],3),np.uint8)
 
-        _, thresh = cv2.threshold(img,127,255,cv2.THRESH_BINARY)
-        contours,hierarchy = cv2.findContours(thresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+        _, thresh = cv2.threshold(img,30,255,cv2.THRESH_BINARY)
+        contours,hierarchy = cv2.findContours(thresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
+        self.contours = contours
 
         xList, yList, wList = [], [], []
 
         x_goals, y_goals, theta_goals = [], [], []
+        x_goals_tot, y_goals_tot = [], []
 
-        for i in range(0,len(contours)):
+        for i in [0, 2, 3, 7, 8, 9, 11, 13]:
 
             xList, yList, wList = [], [], []
 
-            if(hierarchy[0][i][3] != -1):
-                # perimeter = cv2.arcLength(contours[i], closed=True)
-                # epsilon = 0.008*perimeter
-                epsilon = 0.006*size_img[1]
-                contours[i] = cv2.approxPolyDP(contours[i], epsilon, closed=True)
-
+            # if(hierarchy[0][i][3] != -1):
+            if(True):
+                xList, yList, wList = [], [], []
                 len_cont = len(contours[i])
                 for j in range(0,len_cont):
                     black[contours[i][j][0][1]][contours[i][j][0][0]] = 255
                     xList.append(contours[i][j][0][0])
                     yList.append(contours[i][j][0][1])
+                x_goals_tot.append(xList)
+                y_goals_tot.append(yList)
+
+                # perimeter = cv2.arcLength(contours[i], closed=True)
+                # epsilon = 0.008*perimeter
+                epsilon = 0.006*size_img[1]
+                contours[i] = cv2.approxPolyDP(contours[i], epsilon, closed=True)
+
+                xList, yList, wList = [], [], []
+                len_cont = len(contours[i])
+                for j in range(0,len_cont):
+                    xList.append(contours[i][j][0][0])
+                    yList.append(contours[i][j][0][1])
                     wList.append(0)
-            
+                
                 x_goals.append(xList)
                 y_goals.append(yList)
                 theta_goals.append(wList)
@@ -253,6 +263,8 @@ class PathPlanner():
             x_goals[cont].append(x_goals[cont][0])
             y_goals[cont].append(y_goals[cont][0])
             theta_goals[cont].append(theta_goals[cont][0])
+        
+        self.cData.data = str([x_goals_tot, y_goals_tot])
         
         # print(x_goals, len(x_goals))
         # print(y_goals, len(y_goals))
@@ -281,12 +293,13 @@ class PathPlanner():
         self.x_goals = [x_goals]
         self.y_goals = [y_goals]
         self.theta_goals = [theta_goals]
+        self.cData.data = str([self.x_goals, self.y_goals])
 
         self.publish_contours()
 
     def publish_contours(self):
         # publishing contour
-        self.cData.data = str([self.x_goals, self.y_goals])
+        # self.cData.data = str([self.x_goals, self.y_goals])
         self.contourPub.publish(self.cData)
         self.rate.sleep()
 
@@ -309,7 +322,6 @@ class PathPlanner():
 
         # publishing contour
         self.publish_contours()
-
 
     def main(self):
 
