@@ -73,7 +73,7 @@ class Feedback():
         '''
         Purpose:
         ---
-        It's callback function which collects the status of task from the topic
+        Callback function which collects the status of task from the topic
         "/penStatus"
         
         Input Arguments:
@@ -96,7 +96,7 @@ class Feedback():
         '''
         Purpose:
         ---
-        It's callback function which collects the information related to ending
+        Callback function which collects the information related to ending
         the signal in order to finish the run.
         
         Input Arguments:
@@ -121,7 +121,7 @@ class Feedback():
         '''
         Purpose:
         ---
-        It plots the points on the video feed collected from overhead camera
+        Plots the points on the video feed collected from overhead camera
         when pen is in the draw mode. (Only for testing)
         
         Input Arguments:
@@ -403,7 +403,7 @@ class Feedback():
         '''
         Purpose:
         ---
-        It will make the script run and helps callback to perform the necessary operations
+        Keeps the node alive
         
         Input Arguments:
         ---
