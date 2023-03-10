@@ -31,16 +31,15 @@ int maxAccleration = 100;
 String recData = "0";
 
 // Creating the objects for controlling the motors
-AccelStepper stepper[3];
-AccelStepper stepper[FRONT](AccelStepper::DRIVER, FRONT_WHEEL_STEP, FRONT_WHEEL_DIR); 
-AccelStepper stepper[LEFT](AccelStepper::DRIVER, LEFT_WHEEL_STEP, LEFT_WHEEL_DIR); 
-AccelStepper stepper[RIGHT](AccelStepper::DRIVER, RIGHT_WHEEL_STEP, RIGHT_WHEEL_DIR);
+AccelStepper stepper[3] = { (AccelStepper::DRIVER, FRONT_WHEEL_STEP, FRONT_WHEEL_DIR), 
+                            (AccelStepper::DRIVER, LEFT_WHEEL_STEP, LEFT_WHEEL_DIR), 
+                            (AccelStepper::DRIVER, RIGHT_WHEEL_STEP, RIGHT_WHEEL_DIR)
+                          };
 
 Servo myservo;        // create servo object to control a servo
 bool servo_pos = 0;
 int up_pos = 10;        // variable to store the servo position
 int down_pos = 95;        // variable to store the servo position
-
 
 void setup() {
   // put your setup code here, to run once:
@@ -118,7 +117,7 @@ void loop() {
   run_speed();
 
   // setting new speed for each wheel
-  set_speed(wheel[FRONT].force, wheel[LEFT].force, wheel[RIGHT].force);
+  set_speed();
 
 }
  
