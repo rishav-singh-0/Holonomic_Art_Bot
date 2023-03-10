@@ -31,14 +31,14 @@
 ################### IMPORT MODULES #######################
 
 import rospy
-from cv_basics.msg import aruco_data
+from cv_basics.msg import aruco_data        # odom data
 from geometry_msgs.msg import Twist         # velocity
 from std_msgs.msg import String             # x and y setpoints/pixel list
 from std_msgs.msg import Int32              # taskStatus
 
 import numpy as np
 import cv2
-import math		# If you find it useful
+import math
 from math import pi as PI
 
 
@@ -98,34 +98,131 @@ class PathPlanner():
         self.penPub = rospy.Publisher('/penStatus', Int32, queue_size=10)
         self.taskStatusPub = rospy.Publisher('/taskStatus', Int32, queue_size=10)
 
-        rospy.Subscriber('/endSignal',Int32, self.end_signal_Cb)
-        rospy.Subscriber('/detected_aruco', aruco_data, self.aruco_feedback_Cb)
+        rospy.Subscriber('/detected_aruco', aruco_data, self.aruco_feedback_callback)
+        rospy.Subscriber('/endSignal',Int32, self.end_signal_callback)
         
     ##################### FUNCTION DEFINITIONS #######################
 
-    def aruco_feedback_Cb(self, msg):
+    def aruco_feedback_callback(self, msg):
+        '''
+        Purpose:
+        ---
+        Callback function which collects the odom data(localization) from the
+        topic "/detect_aruco" in x, y and theta format
+        
+        Input Arguments:
+        ---
+        msg :  aruco_data
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        It is called when the information is being published on the topic
+        "/detect_aruco"
+        '''
+
         self.hola_position[0] = msg.x
         self.hola_position[1] = msg.y
         self.hola_position[2] = msg.theta
         # print(self.hola_position)
     
-    def end_signal_Cb(self, msg):
+    def end_signal_callback(self, msg):
+        '''
+        Purpose:
+        ---
+        Callback function which checks if task needs to be finished from topic
+        "/endSignal" and calls cleanup function if task has ended
+        
+        Input Arguments:
+        ---
+        msg :  Int32
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        It is called when the information is being published on the topic
+        "/endSignal"
+        '''
+
         if msg.data == 1:
             self.cleanup()
 
     def is_ready(self):
+        '''
+        Purpose:
+        ---
+        Checks if the node is ready to run by checking if the required
+        parameters are available/updated
+        
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        Boolean
+
+        Example call:
+        ---
+        self.is_ready()
+        '''
+
         condition = self.x_goals == [] or \
                     self.hola_position[0] == None
         # print(self.x_goals,self.hola_position)
         return condition
     
     def threshold_box(self):
+        '''
+        Purpose:
+        ---
+        Checks if the bot has reached the desired setpoint with permissible
+        tolerance/threshold
+        
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        Boolean
+
+        Example call:
+        ---
+        self.threshold_box()
+        '''
+
         condition = abs(self.error_global[0]) < 4 and \
                     abs(self.error_global[1]) < 4 and \
                     abs(math.degrees(self.error_global[2])) <= 5
         return condition
 
     def next_goal(self):
+        '''
+        Purpose:
+        ---
+        Logic to give next goal/setpoint if the current goal is reached, also
+        determines if all the goals are reached.
+        
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        self.next_goal()
+        '''
+
         condition = self.threshold_box()
         # print(self.hola_position)
         if(condition):
@@ -161,6 +258,25 @@ class PathPlanner():
                 self.cleanup()
             
     def cleanup(self):
+        '''
+        Purpose:
+        ---
+        Does the cleanup work before exitting. Publish the required topics for
+        safety and shutdown the node.
+        
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        self.cleanup()
+        '''
+
         if self.taskCompleted == 1:
             self.taskStatus.data = 1
         self.taskStatusPub.publish(self.taskStatus)
@@ -173,11 +289,27 @@ class PathPlanner():
 
     def safety_check(self):
         '''
-        Limit x, y velocities while maintaining the ratio between them to maintain trajectory
+        Purpose:
+        ---
+        Limit x, y velocities while maintaining the ratio between them to
+        maintain trajectory
+        
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        self.safety_check()
         '''
-        max_velocity = 0.8
+
+        max_velocity = 0.8      # maximum allowed velocity
         # rospy.loginfo(self.vel.linear.x)
-        ratio = 1.2
+        ratio = 1.2             # velocity reduction factor
         if(abs(self.vel.linear.x) > max_velocity and abs(self.vel.linear.y) > max_velocity):
             self.vel.linear.x /= ratio
             self.vel.linear.y /= ratio
@@ -185,7 +317,21 @@ class PathPlanner():
 
     def position_controller(self):
         '''
-        Calculate the velocity required to reach desired position goal
+        Purpose:
+        ---
+        Calculates the velocity required to reach desired position goal
+        
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        self.position_controller()
         '''
 
         for i in range(3):
@@ -205,9 +351,26 @@ class PathPlanner():
         self.safety_check()
         
     def image_mode(self):
+        '''
+        Purpose:
+        ---
+        Takes image and calculates the x_goals and y_goals from the contours
+        detected from image.
+        
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        self.image_mode()
+        '''
         
         size_img = (500,500)
-        # max_points = 20
 
         # img_path = "/mnt/STORAGE/project/hola_bot/src/task5b/src/smile.png"
         # img_path = "/mnt/STORAGE/project/hola_bot/src/task5b/src/snapchat.png"
@@ -277,6 +440,23 @@ class PathPlanner():
         self.publish_contours()
 
     def function_mode(self):
+        '''
+        Purpose:
+        ---
+        Takes the equation and calculates the x_goals and y_goals.
+        
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        self.function_mode()
+        '''
         
         # take few points from 0 to 2*PI and generate setpoints in x, y and theta arrays
         t = np.linspace(0, 2*PI, num=self.max_setpoints)       
@@ -298,12 +478,48 @@ class PathPlanner():
         self.publish_contours()
 
     def publish_contours(self):
+        '''
+        Purpose:
+        ---
+        Publishes total points to follow from contours
+        
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        self.publish_contours()
+        '''
+        
         # publishing contour
         # self.cData.data = str([self.x_goals, self.y_goals])
         self.contourPub.publish(self.cData)
         self.rate.sleep()
 
     def publisher(self):
+        '''
+        Purpose:
+        ---
+        Publishes to the required topics about penStatus, velocity setpoints,
+        and taskStatus
+        
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        self.publish()
+        '''
         
         # Publishing required velocity in x, y, theta form
         self.goal_publisher.publish(self.vel)
@@ -324,6 +540,25 @@ class PathPlanner():
         self.publish_contours()
 
     def main(self):
+        '''
+        Purpose:
+        ---
+        It will make the script run and helps callback to perform the necessary
+        operations Executes the required methods in order to reach the desired
+        goal position.
+        
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        self.main()
+        '''
 
         while not rospy.is_shutdown():
 
