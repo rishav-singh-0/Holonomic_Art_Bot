@@ -29,20 +29,20 @@
 
 ######################## IMPORT MODULES ##########################
 
-import numpy as np				# If you find it required
 import rospy 				
-from sensor_msgs.msg import Image 	# Image is the message type for images in ROS
-from cv_bridge import CvBridge	# Package to convert between ROS and OpenCV Images
-import cv2				# OpenCV Library
-from cv_basics.msg import aruco_data
+from sensor_msgs.msg import Image 	    # Image is the message type for images in ROS
+from cv_bridge import CvBridge	        # Package to convert between ROS and OpenCV Images
+import cv2				                # OpenCV Library
+from cv_basics.msg import aruco_data    # odom data publisher format
 import math
-from collections import deque
-from std_msgs.msg import Int32              # penStatus
+import numpy as np
+from collections import deque           # For storing drawn points
+from std_msgs.msg import Int32          # penStatus
 
 
 class Feedback():
     def __init__(self):
-        ############################ GLOBALS #############################
+        ########################## GLOBALS #############################
 
         # self.aruco_msg = Pose2D()
         self.aruco_msg = aruco_data()
@@ -58,7 +58,7 @@ class Feedback():
         self.penStatus = 0
         self.drawn = deque(maxlen=10000)
 
-        #################### ROS Node ############################
+        #################### ROS Node ################################
 
         rospy.init_node('aruco_feedback_node')
         # rospy.Subscriber('overhead_cam/image_raw', Image, self.callback)
@@ -70,15 +70,73 @@ class Feedback():
     ##################### FUNCTION DEFINITIONS #######################
 
     def pen_status_callback(self, msg):
+        '''
+        Purpose:
+        ---
+        It's callback function which collects the status of task from the topic
+        "/penStatus"
+        
+        Input Arguments:
+        ---
+        msg :  Int32
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        It is called when the information is being published on the topic
+        "/penStatus" and variable will also be updated on each call
+        '''
+
         self.penStatus = msg.data
     
     def end_signal_Cb(self, msg):
+        '''
+        Purpose:
+        ---
+        It's callback function which collects the information related to ending
+        the signal in order to finish the run.
+        
+        Input Arguments:
+        ---
+        msg :  Int32
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        It is called when the information is being published on the topic
+        "/endSignal"
+        '''
         
         if msg.data == 1:
             rospy.signal_shutdown("Aruco Feedback: Run Finished!")
             exit(0)
 
     def draw_path(self):
+        '''
+        Purpose:
+        ---
+        It plots the points on the video feed collected from overhead camera
+        when pen is in the draw mode. (Only for testing)
+        
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        self.draw_path()
+        '''
+
         if(self.penStatus == 1):
             self.drawn.appendleft((int(self.bot_centroid[0]), int(self.bot_centroid[1])))
         	# loop over the set of tracked points
@@ -93,38 +151,139 @@ class Feedback():
             cv2.circle(self.current_frame, self.drawn[i], radius=0, color=(0, 0, 255), thickness=2)
 
     def centroid(self, arr):
+        '''
+        Purpose:
+        ---
+        Calculates the centroid of the shape/object by any two vectors of any
+        shape/object
+        
+        Input Arguments:
+        ---
+        arr: [[(float)],[(float)]]
+
+        Returns:
+        ---
+        centroid of the shape(in form of (x,y)): [(float), (float)]
+
+        Example call:
+        ---
+        self.centroid(vector)
+        '''
+
         length = arr.shape[0]
         sum_x = np.sum(arr[:, 0])
         sum_y = np.sum(arr[:, 1])
         return [sum_x/length, sum_y/length]
 
     def create_vector(self, point_1, point_2):
+        '''
+        Purpose:
+        ---
+        Takes 2 points and determines line vector of the shape
+        
+        Input Arguments:
+        ---
+        point_1: [x, y], point_2: [x, y]
+
+        Returns:
+        ---
+        vector of the points
+
+        Example call:
+        ---
+        self.create_vector(point_1, point_2) 
+        '''
         return np.array(np.array(point_2) - np.array(point_1))
 
     def unit_vector(self, vector):
-        """ Returns the unit vector of the vector.  """
+        '''
+        Purpose:
+        ---
+        Returns the unit vector of the given vector.
+        
+        Input Arguments:
+        ---
+        vector
+
+        Returns:
+        ---
+        vector
+
+        Example call:
+        ---
+        self.unit_vector(vector)
+        '''
         return vector / np.linalg.norm(vector)
     
-    def angle_between(self, v1, v2):
-        """ 
-        Returns the angle in radians between vectors 'v1' and 'v2'
-        """
-        v1_u = self.unit_vector(v1)
-        v2_u = self.unit_vector(v2)
-        theta = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
-        # print(v1_u, v2_u, theta)
+    def angle_between(self, vector_1, vector_2):
+        '''
+        Purpose:
+        ---
+        It returns the angle in radians between vectors 'v1' and 'v2'
+        
+        Input Arguments:
+        ---
+        vector v1 and v2
 
-        if(v1[0]>0):
+        Returns:
+        ---
+        angle in radian
+
+        Example call:
+        ---
+        self.angle_between(vector1, vector2)
+        '''
+
+        v1_u = self.unit_vector(vector_1)
+        v2_u = self.unit_vector(vector_2)
+        theta = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+        if(vector_1[0]>0):
             return -theta
         return theta
 
-    def side_length(self, p1, p2):
-        """
+    def side_length(self, point_1, point_2):
+        '''
+        Purpose:
+        ---
         Takes two points and gives length between them
-        """
+        
+        Input Arguments:
+        ---
+        points p1 and p2
+
+        Returns:
+        ---
+        length
+
+        Example call:
+        ---
+        self.side_length(point1, point2)
+        '''
         return pow(pow(p1[0]-p2[0], 2) + pow(p1[1]-p2[1], 2), 0.5)
 
     def callback(self, data):
+        '''
+        Purpose:
+        ---
+        It's callback function which collects the information from the topic
+        "usb_cam/image_raw" and calculates current location and orientation of
+        bot in x, y and theta format
+        
+        Input Arguments:
+        ---
+        data :  Image type
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        Automatically called when the information is being published on the
+        topic "/path_plan" and variables
+        '''
+
         # Bridge is Used to Convert ROS Image message to OpenCV image
         br = CvBridge()
         # rospy.loginfo("receiving camera frame")
@@ -216,12 +375,49 @@ class Feedback():
         rospy.sleep(0.001)
 
     def publish(self):
+        '''
+        Purpose:
+        ---
+        Publishes the location(x, y) and oriantation(theta) of the bot in form
+        of x, y, theta
+        
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        self.aruco_publisher.publish()
+        '''
+
         self.aruco_msg.x = self.bot_centroid[0]
         self.aruco_msg.y = self.bot_centroid[1]
         self.aruco_msg.theta = self.theta
         self.aruco_publisher.publish(self.aruco_msg)
         
     def main(self):
+        '''
+        Purpose:
+        ---
+        It will make the script run and helps callback to perform the necessary operations
+        
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        self.main()
+        '''
+
         rospy.spin()
   
 if __name__ == '__main__':
