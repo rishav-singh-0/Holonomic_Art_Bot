@@ -323,7 +323,7 @@ class Controller():
         print("cleanup done")
         self.rate.sleep()
         # rospy.signal_shutdown("Controller: Finished Job!")
-        # sys.exit(0)
+        sys.exit(0)
 
     def inverse_kinematics(self):
         '''
