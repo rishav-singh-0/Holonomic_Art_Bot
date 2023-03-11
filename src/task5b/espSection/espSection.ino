@@ -13,16 +13,29 @@
 #define BAUD_RATE 115200
 
 // WiFi credentials
-const char* ssid = "Dark_Demon";                   //WiFi hotspot ssid
-const char* password =  "apna_use_kar";            //WiFi hotspot password
-const uint16_t port = 8002;
-const char * host = "192.168.43.129";             //The ip address of laptop(base station) after connecting it to wifi hotspot
 
+// ssid: WiFi hotspot ssid
+const char* ssid = "Dark_Demon";
+
+// password: WiFi hotspot password
+const char* password =  "apna_use_kar";            
+
+// port: common port for ost and client
+const uint16_t port = 8002;
+
+//host: The ip address of laptop(base station) after connecting it to wifi hotspot
+const char * host = "192.168.43.129";             
+
+// previousMillis: store iteration time
 unsigned long previousMillis = 0;
+
+// interval: in milliseconds
 unsigned long interval = 8000;
 
+//client: WiFi Client object for socket communication
 WiFiClient client;
 
+//receivedMsg: String holder for received messages from socket connection
 String receivedMsg = "0";
 
 void setup(){
@@ -62,10 +75,17 @@ void loop() {
   }
   
   while(1){
-      receivedMsg = client.readStringUntil('\n');     //Read the message through the socket until new line char(\n)
-      client.print("Hello from ESP32!");              //Send an acknowledgement to host(laptop)
-      Serial.println(receivedMsg);                    //Print data on Serial monitor
-      Serial1.println(receivedMsg);                   //Send data to AVR
+      //Read the message through the socket until new line char(\n)
+      receivedMsg = client.readStringUntil('\n');     
+
+      //Send an acknowledgement to host(laptop)
+      client.print("Hello from ESP32!");              
+      
+      //Print data on Serial monitor
+      Serial.println(receivedMsg);                    
+      
+      //Send data to AVR
+      Serial1.println(receivedMsg);                   
       Serial1.flush();
   }
 }

@@ -1,3 +1,12 @@
+/*
+* Team Id: HB#1254
+* Author List: Rishav
+* Filename: pins.h
+* Theme: Hola Bot -- Specific to eYRC 2022-23
+* Functions: None
+* Global Variables: None
+*/
+
 // Defining direction and step pins for the stepper motor
 
 #define FRONT_WHEEL_STEP 5          //3A    Purple
@@ -11,7 +20,7 @@
 
 #define MICROSTEP_2 44              //5C
 
-#define SERVO 12                    //1B 
+#define SERVO 12                    //1B    Orange
 
 #define RED 6
 #define GREEN 8

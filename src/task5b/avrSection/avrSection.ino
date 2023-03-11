@@ -12,8 +12,6 @@
 #include <Servo.h>
 #include "pins.h"
 
-// Task 5
-
 // Creating the motor force variables
 
 enum WHEEL {FRONT, LEFT, RIGHT};
@@ -25,10 +23,17 @@ typedef struct{
 
 // initializing velocity variables 
 
-Wheel wheel[3] = {{0, 0}, {0, 0}, {0, 0}};    // to store wheel running status and its velocity
-int maxSpeed = 600;                           // maximum allowed speed
-int maxAccleration = 100;                     // maximum allowed accleration
-String recData = "0";                         // storing received data from espSection
+//wheel: to store wheel running status and its velocity
+Wheel wheel[3] = {{0, 0}, {0, 0}, {0, 0}};
+
+//maxSpeed: maximum allowed speed
+int maxSpeed = 600;
+
+//maxAccleration: maximum allowed accleration
+int maxAccleration = 100;
+
+//recData: String holder for storing received data from espSection
+String recData = "0";
 
 // Creating the objects for controlling the motors
 AccelStepper stepper_front(AccelStepper::DRIVER, FRONT_WHEEL_STEP, FRONT_WHEEL_DIR); 
