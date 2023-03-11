@@ -250,7 +250,7 @@ class Feedback():
         
         Input Arguments:
         ---
-        points p1 and p2
+        points point_1 and point_2
 
         Returns:
         ---
@@ -260,7 +260,7 @@ class Feedback():
         ---
         self.side_length(point1, point2)
         '''
-        return pow(pow(p1[0]-p2[0], 2) + pow(p1[1]-p2[1], 2), 0.5)
+        return pow(pow(point_1[0]-point_2[0], 2) + pow(point_1[1]-point_2[1], 2), 0.5)
 
     def callback(self, data):
         '''
@@ -308,7 +308,7 @@ class Feedback():
 
         aruco_bot = np.array([])
         
-        self.draw_path()
+        # self.draw_path()
 
         # Camera window
         cv2.imshow("Camera Window", self.current_frame)
