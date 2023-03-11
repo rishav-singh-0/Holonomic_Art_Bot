@@ -372,12 +372,13 @@ class PathPlanner():
         
         size_img = (500,500)
 
-        # img_path = "/mnt/STORAGE/project/hola_bot/src/task5b/src/smile.png"
-        # img_path = "/mnt/STORAGE/project/hola_bot/src/task5b/src/snapchat.png"
-        img_path = "/mnt/STORAGE/project/hola_bot/src/task5b/src/robotFinal.png"
-        rospy.loginfo("Image: " + img_path)
+        img_path = "/mnt/STORAGE/project/hola_bot/src/task5b/src/"
+        # file_name = "smile.png"
+        # file_name = "snapchat.png"
+        file_name = "robotFinal.png"
+        rospy.loginfo("Image: " + file_name)
 
-        img = cv2.imread(img_path, 0)
+        img = cv2.imread(img_path + file_name, 0)
 
         img = cv2.resize(img,size_img)
         black = np.zeros((size_img[0],size_img[1],3),np.uint8)
@@ -391,7 +392,8 @@ class PathPlanner():
         x_goals, y_goals, theta_goals = [], [], []
         x_goals_tot, y_goals_tot = [], []
 
-        for i in [0, 2, 3, 7, 8, 9, 11, 13]:
+        # for i in range(0,len(contours)):
+        for i in [0, 3, 7, 8, 9, 11, 13]:
 
             xList, yList, wList = [], [], []
 
@@ -399,7 +401,7 @@ class PathPlanner():
             if(True):
                 xList, yList, wList = [], [], []
                 len_cont = len(contours[i])
-                for j in range(0,len_cont):
+                for j in range(0,len_cont, 2):
                     black[contours[i][j][0][1]][contours[i][j][0][0]] = 255
                     xList.append(contours[i][j][0][0])
                     yList.append(contours[i][j][0][1])
@@ -431,7 +433,7 @@ class PathPlanner():
         
         # print(x_goals, len(x_goals))
         # print(y_goals, len(y_goals))
-        # cv2.imwrite("out_def.png",black)
+        cv2.imwrite(img_path + "out_def.png", black)
 
         self.x_goals = x_goals
         self.y_goals = y_goals
