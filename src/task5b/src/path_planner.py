@@ -58,7 +58,7 @@ class PathPlanner():
         self.contour_index = 0				# For travercing the contours
         self.goal_index = 0					# For travercing the setpoints
         
-        self.max_setpoints = 30            # max setpoints to be trasversed by bot
+        self.max_setpoints = 85            # max setpoints to be trasversed by bot
 
         # variables for P controller
         self.const_vel = [0.0065, 0.50]			# [kp_xy, kp_w]
@@ -461,21 +461,54 @@ class PathPlanner():
         '''
         
         # take few points from 0 to 2*PI and generate setpoints in x, y and theta arrays
-        t = np.linspace(0, 2*PI, num=self.max_setpoints)       
-        x = lambda p: 200*math.cos(p) + 250
-        y = lambda p: 100*math.sin(2*p) + 250
-        theta = lambda p: (PI/4)*math.sin(p + PI/2) # you may need to add a phase shift
+        t = np.linspace(-1, 4*PI, num=1400)
         
+        # polar formats
+        r = lambda p: 60*math.ceil((4*PI-p)/PI) * math.sin(2*p)
+        angle = lambda p: p + PI/2
+        
+        # carsing formats
+        x = lambda p: (0 if p<=0 else r(p)*math.cos(angle(p))) + 250
+        y = lambda p: (200*p if p<=0 else r(p)*math.sin(angle(p))) + 250
+        
+        # theta: orientation
+        def theta_fun(p):
+            res = 2*-p + PI/2 if p<=0 else PI*p/2 + PI/2
+            div = int(res/PI)
+            res = res % PI
+            
+            if div%2 == 1:
+                res = PI - res
+            # res = res - PI
+            # print(p, div, res)
+            return res
+            
+        x_goals_tot, y_goals_tot = [], []
+        total_iterations = len(t)
+        for index in range(total_iterations):
+            x_goals_tot.append(int(x(t[index])))
+            y_goals_tot.append(int(y(t[index])))
+
         x_goals, y_goals, theta_goals = [], [], []
-        for index in range(len(t)):
+        for index in range(0, total_iterations, int(total_iterations/self.max_setpoints)):
             x_goals.append(int(x(t[index])))
             y_goals.append(int(y(t[index])))
-            theta_goals.append(int(theta(t[index])))
+            theta_goals.append(theta_fun(t[index]))
+
+        # appending ending point
+        x_goals.append(int(x(t[-1])))
+        y_goals.append(int(y(t[-1])))
+        theta_goals.append(theta_fun(t[-1]))
         
         self.x_goals = [x_goals]
         self.y_goals = [y_goals]
         self.theta_goals = [theta_goals]
-        self.cData.data = str([self.x_goals, self.y_goals])
+        self.cData.data = str([[x_goals_tot], [y_goals_tot]])
+
+        # print(self.x_goals, len(self.x_goals))
+        # print(self.theta_goals, len(self.theta_goals))
+        # print(y_goals, len(y_goals))
+        # cv2.imwrite(img_path + "out_def.png", black)
 
         self.publish_contours()
 
@@ -593,8 +626,8 @@ class PathPlanner():
 if __name__ == "__main__":
     try:
         control = PathPlanner()
-        # control.function_mode()
-        control.image_mode()
+        control.function_mode()
+        # control.image_mode()
         control.main()
     except rospy.ROSInterruptException:
         pass
