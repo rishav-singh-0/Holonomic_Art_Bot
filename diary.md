@@ -1,3 +1,9 @@
+## 13th Mar 2023
+Result of task 6 came out and we were not selected for finals
+
+Thought of a new method for path planning, do not reach the set point but only
+reach conditional percentage of this path, by doing so will not reduce motor
+velocity.
 
 ## 5th Mar 2023
 Decided to work on simulator(gazebo) for refining the scripts as bot in not
